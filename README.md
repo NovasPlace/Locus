@@ -47,7 +47,7 @@
 
 ### Linux (recommended)
 
-Download the latest `.deb` or `.AppImage` from [Releases](https://github.com/SovereignForge/locus/releases).
+Download the latest `.deb` or `.AppImage` from [Releases](https://github.com/NovasPlace/Locus/releases).
 
 **deb (Ubuntu / Debian / Pop!_OS):**
 ```bash
@@ -147,7 +147,7 @@ The companion panel opens alongside the main overlay (click **⚡ Panels**).
 ## Build from source
 
 ```bash
-git clone https://github.com/SovereignForge/locus
+git clone https://github.com/NovasPlace/Locus
 cd locus
 npm install
 
@@ -192,4 +192,4 @@ src/
 
 ## License
 
-MIT — © Donovan Everitts / SovereignForge
+MIT — © Donovan Everitts / NovasPlace
