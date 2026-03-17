@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Locus</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0e14;
+            color: #c5cad3;
+            font-family: -apple-system, 'Segoe UI', 'Inter', sans-serif;
+            font-size: 13px;
+            overflow: hidden;
+            user-select: none;
+            -webkit-app-region: drag;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .step {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            padding: 40px 36px 20px;
+        }
+
+        .step.active {
+            display: flex;
+        }
+
+        .emoji {
+            font-size: 56px;
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            color: #e6edf3;
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        h2 {
+            color: #e6edf3;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        p {
+            color: #8b949e;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .highlight {
+            color: #00c9ff;
+        }
+
+        /* ── Form Elements ── */
+        .field {
+            margin-bottom: 14px;
+            -webkit-app-region: no-drag;
+        }
+
+        .field label {
+            display: block;
+            color: #8b949e;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 5px;
+        }
+
+        .field select,
+        .field input {
+            width: 100%;
+            padding: 8px 12px;
+            background: #141920;
+            border: 1px solid #1e2a38;
+            border-radius: 6px;
+            color: #e6edf3;
+            font-size: 13px;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .field select:focus,
+        .field input:focus {
+            border-color: #00c9ff;
+        }
+
+        .field .hint {
+            color: #555;
+            font-size: 11px;
+            margin-top: 3px;
+        }
+
+        /* ── Status ── */
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            background: #141920;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+
+        .status .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status .dot.ok {
+            background: #2ecc71;
+        }
+
+        .status .dot.err {
+            background: #e74c3c;
+        }
+
+        .status .dot.loading {
+            background: #f39c12;
+            animation: pulse 1s infinite;
+        }
+
+        .status .dot.idle {
+            background: #333;
+        }
+
+        @keyframes pulse {
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        /* ── Hotkey Display ── */
+        .hotkey-box {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 20px;
+            background: #141920;
+            border: 1px solid #1e2a38;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 16px;
+            color: #00c9ff;
+            margin: 12px 0;
+        }
+
+        /* ── Feature list ── */
+        .features {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 12px 0;
+        }
+
+        .feature {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: #141920;
+            border-radius: 6px;
+        }
+
+        .feature .icon {
+            font-size: 18px;
+        }
+
+        .feature .text {
+            color: #c5cad3;
+            font-size: 12px;
+        }
+
+        /* ── Footer ── */
+        .footer {
+            padding: 16px 36px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #1e2a38;
+            -webkit-app-region: no-drag;
+        }
+
+        .dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #1e2a38;
+        }
+
+        .dots span.active {
+            background: #00c9ff;
+        }
+
+        .btn {
+            padding: 8px 20px;
+            border: 1px solid #1e2a38;
+            border-radius: 6px;
+            background: #141920;
+            color: #c5cad3;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            border-color: #00c9ff;
+            color: #e6edf3;
+        }
+
+        .btn.primary {
+            background: #00c9ff;
+            border-color: #00c9ff;
+            color: #0a0e14;
+            font-weight: 600;
+        }
+
+        .btn.primary:hover {
+            background: #33d4ff;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Step 1: Welcome -->
+    <div class="step active" id="step-1">
+        <div class="emoji">🔍</div>
+        <h1>Welcome to Locus</h1>
+        <p>Your OS-level AI code reviewer. Select any text on screen and get <span class="highlight">staff-engineer
+                analysis</span> instantly.</p>
+
+        <div class="features">
+            <div class="feature">
+                <span class="icon">🧠</span>
+                <span class="text">Staff-level code review, debugging, refactoring</span>
+            </div>
+            <div class="feature">
+                <span class="icon">⚡</span>
+                <span class="text">Works with any text — code, errors, git diffs, docs</span>
+            </div>
+            <div class="feature">
+                <span class="icon">🔒</span>
+                <span class="text">Your data stays private — local or your own API keys</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 2: Connect -->
+    <div class="step" id="step-2">
+        <h2>Connect an AI provider</h2>
+        <p>Choose how to power Locus's analysis.</p>
+
+        <div class="field">
+            <label>Provider</label>
+            <select id="w-provider">
+                <option value="ollama">🏠 Ollama — Free, local, private</option>
+                <option value="openai">🌐 OpenAI — GPT-4o / GPT-4.1</option>
+                <option value="anthropic">🟣 Anthropic — Claude Sonnet</option>
+                <option value="nvidia">⚡ NVIDIA NIM — Fast cloud inference</option>
+            </select>
+        </div>
+
+        <div class="field" id="w-key-field" style="display:none">
+            <label>API Key</label>
+            <input type="password" id="w-apikey" placeholder="Paste your API key here">
+            <div class="hint" id="w-key-hint"></div>
+        </div>
+
+        <div class="field">
+            <label>Model</label>
+            <input type="text" id="w-model" value="llama3.2:latest" placeholder="Model name">
+        </div>
+
+        <div class="status" id="w-status">
+            <span class="dot idle" id="w-dot"></span>
+            <span id="w-msg">Click "Test" to verify your connection</span>
+        </div>
+
+        <div style="margin-top:12px; -webkit-app-region: no-drag">
+            <button class="btn" id="w-test-btn" onclick="testProvider()">Test Connection</button>
+        </div>
+    </div>
+
+    <!-- Step 3: Ready -->
+    <div class="step" id="step-3">
+        <div class="emoji">🎯</div>
+        <h2>You're all set!</h2>
+        <p>Select any text on screen, then use your hotkey:</p>
+
+        <div class="hotkey-box" id="w-hotkey">Ctrl+Shift+Space</div>
+
+        <p>Or just <span class="highlight">highlight text</span> — Locus will activate automatically.</p>
+        <p style="color:#555; font-size:11px; margin-top:16px">You can change these settings anytime from the tray icon
+            → ⚙ Settings</p>
+    </div>
+
+    <div class="footer">
+        <div class="dots">
+            <span class="active" id="dot-1"></span>
+            <span id="dot-2"></span>
+            <span id="dot-3"></span>
+        </div>
+        <div>
+            <button class="btn" id="back-btn" onclick="prev()" style="display:none">Back</button>
+            <button class="btn primary" id="next-btn" onclick="next()">Get Started</button>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        let currentStep = 1;
+        const PROVIDER_HINTS = {
+            ollama: { showKey: false, hint: '', defaultModel: 'llama3.2:latest', providerName: 'ollama' },
+            openai: { showKey: true, hint: 'Get your key at platform.openai.com', defaultModel: 'gpt-4o-mini', providerName: 'openai' },
+            anthropic: { showKey: true, hint: 'Get your key at console.anthropic.com', defaultModel: 'claude-3-5-haiku-20241022', providerName: 'anthropic' },
+            nvidia: { showKey: true, hint: 'Get your key at build.nvidia.com', defaultModel: 'meta/llama-3.1-70b-instruct', providerName: 'openai' },
+        };
+
+        document.getElementById('w-provider').addEventListener('change', (e) => {
+            const p = PROVIDER_HINTS[e.target.value] || PROVIDER_HINTS.ollama;
+            document.getElementById('w-key-field').style.display = p.showKey ? 'block' : 'none';
+            document.getElementById('w-key-hint').textContent = p.hint;
+            document.getElementById('w-model').value = p.defaultModel;
+        });
+
+        function showStep(n) {
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById('step-' + n).classList.add('active');
+            document.querySelectorAll('.dots span').forEach(d => d.classList.remove('active'));
+            document.getElementById('dot-' + n).classList.add('active');
+
+            document.getElementById('back-btn').style.display = n > 1 ? 'inline-block' : 'none';
+            document.getElementById('next-btn').textContent = n === 3 ? 'Start Using Locus' : n === 2 ? 'Next' : 'Get Started';
+            currentStep = n;
+        }
+
+        function next() {
+            if (currentStep === 3) {
+                // Save config and close
+                saveAndClose();
+                return;
+            }
+            showStep(currentStep + 1);
+        }
+
+        function prev() {
+            if (currentStep > 1) showStep(currentStep - 1);
+        }
+
+        async function testProvider() {
+            const dot = document.getElementById('w-dot');
+            const msg = document.getElementById('w-msg');
+            dot.className = 'dot loading';
+            msg.textContent = 'Testing...';
+
+            const provider = document.getElementById('w-provider').value;
+            const preset = PROVIDER_HINTS[provider];
+            const apiKey = document.getElementById('w-apikey').value.trim();
+
+            const providersCfg = {};
+            if (preset.providerName !== 'ollama') {
+                providersCfg[preset.providerName] = { apiKey };
+                if (provider === 'nvidia') {
+                    providersCfg[preset.providerName].baseUrl = 'https://integrate.api.nvidia.com/v1';
+                }
+            }
+
+            try {
+                const result = await ipcRenderer.invoke('test-provider', {
+                    provider: preset.providerName,
+                    providers: providersCfg,
+                });
+                if (result.ok) {
+                    dot.className = 'dot ok';
+                    msg.textContent = '✓ Connected!';
+                } else {
+                    dot.className = 'dot err';
+                    msg.textContent = result.message || 'Connection failed';
+                }
+            } catch (e) {
+                dot.className = 'dot err';
+                msg.textContent = e.message;
+            }
+        }
+
+        function saveAndClose() {
+            const provider = document.getElementById('w-provider').value;
+            const preset = PROVIDER_HINTS[provider];
+            const apiKey = document.getElementById('w-apikey').value.trim();
+            const model = document.getElementById('w-model').value.trim();
+
+            const providersCfg = {};
+            if (preset.providerName !== 'ollama') {
+                providersCfg[preset.providerName] = { apiKey, timeoutMs: 30000 };
+                if (provider === 'nvidia') {
+                    providersCfg[preset.providerName].baseUrl = 'https://integrate.api.nvidia.com/v1';
+                }
+            }
+
+            ipcRenderer.invoke('save-settings', {
+                provider: preset.providerName,
+                model: model || preset.defaultModel,
+                providers: providersCfg,
+            }).then(() => {
+                ipcRenderer.send('welcome-done');
+            });
+        }
+    </script>
+</body>
+
+</html>

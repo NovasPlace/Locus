@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Companion</title>
+    <style>
+        :root {
+            --navy: #0a0f1e;
+            --navy-light: #0d1428;
+            --navy-card: #111827;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --text-dim: #475569;
+            /* Mode accent — overridden by JS */
+            --accent: #00bcd4;
+            --accent-dim: rgba(0, 188, 212, 0.18);
+            --accent-glow: rgba(0, 188, 212, 0.5);
+            --accent-faint: rgba(0, 188, 212, 0.07);
+            --border: rgba(0, 188, 212, 0.15);
+            --border-med: rgba(0, 188, 212, 0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            width: 100%; height: 100%; overflow: hidden;
+            background: var(--navy);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 13px; line-height: 1.65;
+        }
+
+        /* Dot grid bg */
+        body::before {
+            content: ''; position: fixed; inset: 0;
+            background-image: radial-gradient(circle, rgba(0, 188, 212, 0.14) 1px, transparent 1px);
+            background-size: 22px 22px;
+            pointer-events: none; z-index: 0;
+            transition: background-image 0.3s;
+        }
+
+        /* Unfold animation — panel physically folds out from main window's right edge */
+        @keyframes unfold {
+            0% {
+                transform: perspective(1200px) rotateY(-92deg) scaleX(0.3);
+                opacity: 0;
+                box-shadow: -8px 0 20px rgba(0, 0, 0, 0.6);
+            }
+            40% {
+                transform: perspective(1200px) rotateY(-30deg) scaleX(0.85);
+                opacity: 0.7;
+                box-shadow: -4px 0 16px rgba(0, 0, 0, 0.3);
+            }
+            75% {
+                transform: perspective(1200px) rotateY(3deg) scaleX(1.01);
+                opacity: 1;
+                box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
+            }
+            100% {
+                transform: perspective(1200px) rotateY(0deg) scaleX(1);
+                opacity: 1;
+                box-shadow: none;
+            }
+        }
+        @keyframes foldBack {
+            0% {
+                transform: perspective(1200px) rotateY(0deg) scaleX(1);
+                opacity: 1;
+                box-shadow: none;
+            }
+            60% {
+                transform: perspective(1200px) rotateY(-50deg) scaleX(0.6);
+                opacity: 0.5;
+                box-shadow: -6px 0 18px rgba(0, 0, 0, 0.4);
+            }
+            100% {
+                transform: perspective(1200px) rotateY(-92deg) scaleX(0.2);
+                opacity: 0;
+                box-shadow: -8px 0 24px rgba(0, 0, 0, 0.6);
+            }
+        }
+
+        /* Connector pulse on open */
+        @keyframes connectorFlare {
+            0%   { box-shadow: 0 0 6px var(--accent-glow); width: 3px; }
+            30%  { box-shadow: 0 0 20px var(--accent), 0 0 40px var(--accent-glow); width: 5px; }
+            100% { box-shadow: 0 0 12px var(--accent-glow), 0 0 24px rgba(0, 188, 212, 0.2); width: 3px; }
+        }
+
+        .panel {
+            position: relative; width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            transform-origin: left center;
+            animation: unfold 380ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            z-index: 1;
+        }
+        .panel.closing { animation: foldBack 260ms cubic-bezier(0.55, 0, 0.55, 0.2) forwards; }
+
+        /* Connector strip — energy link to main window */
+        .connector {
+            position: fixed; left: 0; top: 0; width: 3px; height: 100%;
+            background: linear-gradient(180deg, transparent 0%, var(--accent) 15%, var(--accent-glow) 50%, var(--accent) 85%, transparent 100%);
+            box-shadow: 0 0 12px var(--accent-glow), 0 0 24px rgba(0, 188, 212, 0.2);
+            z-index: 10;
+            transition: background 0.3s, box-shadow 0.3s;
+            animation: connectorFlare 500ms ease-out;
+        }
+
+        /* ── Header ── */
+        .header {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 14px 8px 18px;
+            background: rgba(10, 15, 30, 0.9);
+            border-bottom: 1px solid var(--border);
+            -webkit-app-region: drag;
+            flex-shrink: 0; position: relative; z-index: 2;
+        }
+        .header-icon { font-size: 15px; filter: drop-shadow(0 0 6px var(--accent-glow)); transition: filter 0.3s; }
+        .header-title {
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 13px; font-weight: 600; color: var(--accent);
+            letter-spacing: 0.04em; text-shadow: 0 0 10px var(--accent-glow);
+            flex: 1; transition: color 0.3s, text-shadow 0.3s;
+        }
+        /* Header button group — pill shape, shared border */
+        .header-btn-group {
+            -webkit-app-region: no-drag;
+            display: flex; gap: 0;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 5px; overflow: hidden;
+        }
+        .header-btn {
+            -webkit-app-region: no-drag;
+            padding: 3px 8px; border-radius: 0;
+            border: none; border-right: 1px solid rgba(255,255,255,0.06);
+            background: none; color: var(--text-dim);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px; cursor: pointer; transition: all 0.15s;
+        }
+        .header-btn:last-child { border-right: none; }
+        .header-btn:hover { background: rgba(255,255,255,0.04); color: var(--text-muted); }
+        .header-btn.danger:hover { background: rgba(248,81,73,0.12); color: #f85149; }
+
+        /* ── Tab bar ── */
+        .tab-bar {
+            display: flex; gap: 0;
+            background: rgba(10, 15, 30, 0.7);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            -webkit-app-region: no-drag;
+        }
+        .tab-bar button {
+            flex: 1; padding: 7px 0;
+            background: none; border: none;
+            color: var(--text-dim); font-size: 11px;
+            font-weight: 600; letter-spacing: 0.05em;
+            cursor: pointer; transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .tab-bar button:hover { color: var(--text-muted); background: rgba(255,255,255,0.03); }
+        .tab-bar button.active {
+            color: var(--accent); border-bottom-color: var(--accent);
+            background: rgba(255,255,255,0.02);
+            text-shadow: 0 0 8px var(--accent-glow);
+        }
+
+        /* ── Progress ── */
+        .progress-wrap { height: 2px; background: var(--navy-light); flex-shrink: 0; overflow: hidden; }
+        .progress-bar {
+            height: 100%; width: 0%;
+            background: linear-gradient(90deg, var(--accent), rgba(0, 188, 212, 0.4));
+            transition: width 0.4s ease, background 0.3s;
+            box-shadow: 0 0 8px var(--accent-glow); position: relative;
+        }
+        .progress-bar::after {
+            content: ''; position: absolute; right: 0; top: 0;
+            width: 40px; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5));
+            animation: shimmer 1.2s linear infinite;
+        }
+        .progress-bar.done::after { display: none; }
+        @keyframes shimmer { from { opacity: 0.3; } to { opacity: 1; } }
+
+        /* ── Status ── */
+        .status-bar {
+            display: flex; align-items: center; gap: 6px;
+            padding: 4px 14px 4px 18px;
+            background: var(--navy-light);
+            border-bottom: 1px solid var(--border);
+            font-size: 10px; color: var(--text-dim);
+            flex-shrink: 0; display: none;
+        }
+        .status-dot {
+            width: 5px; height: 5px; border-radius: 50%;
+            background: var(--accent); animation: pulse 1.5s ease infinite;
+        }
+        .status-dot.done { animation: none; background: #3fb950; box-shadow: 0 0 4px rgba(63,185,80,0.6); }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 4px var(--accent); }
+            50% { opacity: 0.3; box-shadow: none; }
+        }
+
+        /* ── Mode content areas ── */
+        .mode-content { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+        .mode-content.active { display: flex; }
+
+        /* ── Preview wrap (shared across modes) ── */
+        .preview-wrap {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 24px; gap: 14px;
+        }
+        .preview-label {
+            font-size: 10px; color: var(--text-dim);
+            text-transform: uppercase; letter-spacing: 0.12em;
+        }
+        .preview-text {
+            background: var(--accent-faint);
+            border: 1px solid var(--border-med);
+            border-radius: 8px; padding: 12px 14px;
+            font-size: 12px; color: var(--text-muted);
+            max-height: 140px; overflow-y: auto;
+            width: 100%; line-height: 1.6;
+            white-space: pre-wrap; word-break: break-word;
+        }
+        .mode-card {
+            background: var(--accent-faint);
+            border: 1px solid var(--border-med);
+            border-radius: 10px; padding: 14px 18px;
+            text-align: center; width: 100%;
+        }
+        .mode-card .icon { font-size: 22px; margin-bottom: 6px; }
+        .mode-card .title { font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 3px; }
+        .mode-card .desc { font-size: 11px; color: var(--text-dim); line-height: 1.5; }
+
+        .btn-confirm {
+            width: 100%; padding: 10px 0;
+            background: var(--accent); border: none; border-radius: 5px;
+            color: var(--navy);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px; font-weight: 700; letter-spacing: 0.06em;
+            cursor: pointer;
+            box-shadow: 0 0 14px var(--accent-glow);
+            transition: box-shadow 0.15s, transform 0.1s;
+        }
+        .btn-confirm:hover { box-shadow: 0 0 22px var(--accent-glow); transform: translateY(-1px); }
+        .btn-cancel-preview {
+            width: 100%; padding: 6px 0;
+            background: none; border: 1px solid rgba(248,81,73,0.3);
+            border-radius: 4px; color: rgba(248,81,73,0.7);
+            font-size: 11px; cursor: pointer; transition: all 0.15s;
+        }
+        .btn-cancel-preview:hover { background: rgba(248,81,73,0.1); color: #f85149; }
+
+        /* ── Scroll content ── */
+        .content {
+            flex: 1; overflow-y: auto;
+            padding: 18px 16px 18px 22px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0, 188, 212, 0.3) rgba(0, 0, 0, 0.2);
+            display: none;
+        }
+        .content::-webkit-scrollbar { width: 7px; }
+        .content::-webkit-scrollbar-thumb { background: rgba(0, 188, 212, 0.35); border-radius: 4px; }
+
+        /* ── Markdown output (shared across modes) ── */
+        .output h1 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px; font-weight: 700; color: var(--accent);
+            text-shadow: 0 0 14px var(--accent-glow);
+            margin-bottom: 6px; padding-bottom: 8px;
+            border-bottom: 1px dashed var(--border-med);
+        }
+        .output h2 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px; font-weight: 600; color: var(--accent);
+            margin-top: 18px; margin-bottom: 5px;
+            text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.85;
+        }
+        .output h3 {
+            font-size: 12px; font-weight: 600; color: var(--text);
+            margin-top: 12px; margin-bottom: 4px;
+        }
+        .output p { color: var(--text); margin-bottom: 9px; font-size: 12.5px; line-height: 1.7; }
+        .output strong { color: var(--accent); font-weight: 600; }
+        .output em { color: var(--text-muted); }
+        .output ul, .output ol { padding-left: 18px; margin-bottom: 10px; }
+        .output li { color: var(--text); margin-bottom: 3px; font-size: 12.5px; }
+        .output ul li::marker { content: '◆  '; color: var(--accent); font-size: 7px; }
+        .output code {
+            background: var(--accent-faint); color: var(--accent);
+            padding: 1px 5px; border-radius: 3px;
+            font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+            border: 1px solid var(--border);
+        }
+        .output pre {
+            background: var(--navy-card);
+            border: 1px solid var(--border-med); border-left: 3px solid var(--accent);
+            border-radius: 0 6px 6px 0;
+            padding: 12px 14px; margin: 10px 0 14px; overflow-x: auto;
+        }
+        .output pre code {
+            background: transparent; border: none; padding: 0;
+            color: var(--text); font-size: 12px; line-height: 1.6;
+        }
+        .output blockquote {
+            border-left: 2px solid var(--accent);
+            padding: 6px 12px; margin: 10px 0;
+            background: var(--accent-faint);
+            color: var(--text-muted); font-style: italic; font-size: 12px;
+        }
+        .output hr { border: none; border-top: 1px solid var(--border-med); margin: 12px 0; }
+        .output table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 11.5px; }
+        .output th {
+            background: var(--accent-faint); color: var(--accent); font-weight: 600;
+            padding: 6px 10px; border: 1px solid var(--border);
+            text-align: left; font-family: monospace; font-size: 10px;
+            text-transform: uppercase; letter-spacing: 0.07em;
+        }
+        .output td { padding: 5px 10px; border: 1px solid var(--border); color: var(--text); }
+
+        /* Typewriter cursor */
+        .tw-cursor {
+            display: inline-block; width: 2px; height: 14px;
+            background: var(--accent); margin-left: 1px;
+            vertical-align: text-bottom;
+            animation: blink 0.75s step-end infinite;
+            box-shadow: 0 0 6px var(--accent-glow);
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* Loading state */
+        .loading-state { display: none; flex-direction: column; align-items: flex-start; gap: 14px; padding: 16px 22px; }
+        .loading-prompt {
+            font-size: 11.5px; color: var(--text-muted);
+            background: var(--accent-faint);
+            border: 1px solid var(--border); border-left: 2px solid var(--accent);
+            padding: 8px 12px; border-radius: 0 4px 4px 0;
+            font-style: italic; line-height: 1.5;
+            max-width: 100%; word-break: break-word;
+        }
+        .scanning-lines { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+        .scan-line {
+            height: 6px; background: var(--accent-faint);
+            border-radius: 3px; animation: scanAnim 2s ease-in-out infinite;
+        }
+        .scan-line:nth-child(1) { width: 85%; }
+        .scan-line:nth-child(2) { width: 65%; animation-delay: 0.15s; }
+        .scan-line:nth-child(3) { width: 78%; animation-delay: 0.3s; }
+        .scan-line:nth-child(4) { width: 55%; animation-delay: 0.45s; }
+        @keyframes scanAnim {
+            0%, 100% { opacity: 0.15; }
+            50% { opacity: 0.45; background: var(--accent-dim); }
+        }
+
+        /* ── Footer ── */
+        .footer {
+            display: none; align-items: center; gap: 6px;
+            padding: 8px 14px 10px 18px;
+            background: rgba(10, 15, 30, 0.9);
+            border-top: 1px solid var(--border);
+            flex-shrink: 0; position: relative; z-index: 2;
+            -webkit-app-region: no-drag;
+        }
+        .footer-meta { flex: 1; font-size: 9px; color: var(--text-dim); font-family: monospace; }
+        .btn {
+            padding: 5px 12px; border-radius: 4px;
+            border: 1px solid var(--border-med);
+            background: var(--accent-faint); color: var(--accent);
+            font-size: 11px; font-weight: 500; cursor: pointer;
+            transition: all 0.15s; font-family: monospace;
+        }
+        .btn:hover { background: var(--accent-dim); box-shadow: 0 0 8px var(--accent-glow); }
+        .btn.success { color: #3fb950; border-color: rgba(63,185,80,0.4); }
+        .btn-clear {
+            width: 100%; padding: 6px 0;
+            background: none; border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 4px; color: var(--text-dim);
+            font-size: 10px; cursor: pointer; transition: all 0.15s;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.06em;
+        }
+        .btn-clear:hover { background: rgba(255,255,255,0.04); color: var(--text-muted); border-color: rgba(255,255,255,0.15); }
+
+        /* ── Terminal mode ── */
+        .term-output {
+            flex: 1; overflow-y: auto; padding: 6px 12px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 11px; line-height: 1.5;
+            white-space: pre-wrap; word-break: break-all;
+            scrollbar-width: thin; scrollbar-color: rgba(245,166,35,0.3) transparent;
+        }
+        .term-output::-webkit-scrollbar { width: 4px; }
+        .term-output::-webkit-scrollbar-thumb { background: rgba(245,166,35,0.2); border-radius: 2px; }
+        .term-output .stdout { color: rgba(255,255,255,0.8); }
+        .term-output .stderr { color: #f85149; opacity: 0.9; }
+        .term-output .exit-msg { color: var(--accent); opacity: 0.6; font-style: italic; margin-top: 4px; }
+        .term-output .prompt-marker { color: #3fb950; opacity: 0.7; }
+        .term-input-row {
+            display: flex; gap: 6px; padding: 6px 12px 8px;
+            border-top: 1px solid var(--border); flex-shrink: 0;
+            -webkit-app-region: no-drag;
+        }
+        .term-input-row input {
+            flex: 1; padding: 5px 8px; border-radius: 5px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.04); color: var(--text);
+            font-family: 'JetBrains Mono', monospace; font-size: 11px; outline: none;
+        }
+        .term-input-row input:focus { border-color: var(--accent); box-shadow: 0 0 6px var(--accent-glow); }
+        .term-input-row button {
+            padding: 5px 10px; border-radius: 5px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.03); color: var(--accent);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px; font-weight: 700; letter-spacing: 0.06em;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .term-input-row button:hover { background: rgba(245,166,35,0.12); border-color: rgba(245,166,35,0.4); box-shadow: 0 0 6px var(--accent-glow); }
+        .term-input-row .kill-btn { color: #f85149; border-color: rgba(248,81,73,0.2); }
+        .term-input-row .kill-btn:hover { background: rgba(248,81,73,0.12); border-color: rgba(248,81,73,0.4); }
+        .term-badge {
+            font-size: 8px; padding: 2px 6px; border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.06); color: rgba(255,255,255,0.3);
+            margin-left: 4px;
+        }
+        .term-badge.running { border-color: rgba(63,185,80,0.4); color: #3fb950; }
+    </style>
+</head>
+
+<body>
+    <div class="connector" id="connector"></div>
+
+    <div class="panel" id="panel">
+        <div class="header">
+            <span class="header-icon" id="header-icon">🔧</span>
+            <span class="header-title" id="header-title">BLUEPRINT</span>
+            <div class="header-btn-group">
+                <button class="header-btn" id="btn-clear" title="Clear context">⟲ Clear</button>
+                <button class="header-btn danger" id="btn-close" title="Close panel">✕</button>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tab-bar">
+            <button class="active" data-mode="blueprint">🔧 Blueprint</button>
+            <button data-mode="teach">📖 Teach</button>
+            <button data-mode="dive">🔎 Dive</button>
+            <button data-mode="terminal">⌘ Term</button>
+        </div>
+
+        <!-- Progress -->
+        <div class="progress-wrap">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+
+        <!-- Status -->
+        <div class="status-bar" id="status-bar">
+            <div class="status-dot" id="status-dot"></div>
+            <span id="status-text">Ready</span>
+        </div>
+
+        <!-- ── Blueprint Mode ── -->
+        <div class="mode-content active" id="mode-blueprint">
+            <div class="preview-wrap" id="bp-preview-wrap">
+                <div class="preview-label">Context</div>
+                <div class="preview-text" id="bp-preview-text"><i style="color:#475569">Highlight something to analyse</i></div>
+                <div class="mode-card">
+                    <div class="icon">🔧</div>
+                    <div class="title">Blueprint Printer</div>
+                    <div class="desc">Generate a structured breakdown via Manifesto Engine</div>
+                </div>
+                <div style="font-size:11px;color:var(--text-dim);font-style:italic">Review what will be sent, then confirm below.</div>
+                <button class="btn-confirm" id="bp-btn-confirm">▶ GENERATE BLUEPRINT</button>
+            </div>
+            <div class="content" id="bp-content">
+                <div class="output" id="bp-output"></div>
+            </div>
+            <div class="loading-state" id="bp-loading">
+                <div class="loading-prompt" id="bp-loading-prompt"></div>
+                <div class="scanning-lines">
+                    <div class="scan-line"></div><div class="scan-line"></div>
+                    <div class="scan-line"></div><div class="scan-line"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Teach Mode ── -->
+        <div class="mode-content" id="mode-teach">
+            <div class="preview-wrap" id="teach-preview-wrap">
+                <div class="preview-label">Selected context</div>
+                <div class="preview-text" id="teach-preview-text"><i style="color:#475569">Highlight something to learn about</i></div>
+                <div class="mode-card">
+                    <div class="icon">📖</div>
+                    <div class="title">Teach Me</div>
+                    <div class="desc">Plain-language breakdown: What, How, Why, Example</div>
+                </div>
+                <button class="btn-confirm" id="teach-btn-confirm">📖 Explain This</button>
+            </div>
+            <div class="content" id="teach-content">
+                <div class="output" id="teach-output"></div>
+            </div>
+        </div>
+
+        <!-- ── Dive Mode ── -->
+        <div class="mode-content" id="mode-dive">
+            <div class="preview-wrap" id="dive-preview-wrap">
+                <div class="preview-label">Context</div>
+                <div class="preview-text" id="dive-preview-text"><i style="color:#475569">Highlight something to analyse deeply</i></div>
+                <div class="mode-card">
+                    <div class="icon">🔎</div>
+                    <div class="title">Deep Dive</div>
+                    <div class="desc">Focused, detailed technical analysis</div>
+                </div>
+                <button class="btn-confirm" id="dive-btn-confirm">🔎 ANALYSE</button>
+            </div>
+            <div class="content" id="dive-content">
+                <div class="output" id="dive-output"></div>
+            </div>
+        </div>
+
+        <!-- ── Terminal Mode ── -->
+        <div class="mode-content" id="mode-terminal">
+            <div class="term-output" id="term-output">
+                <span class="prompt-marker">locus ~ $</span>
+            </div>
+            <div class="term-input-row">
+                <input type="text" id="term-cmd" placeholder="Enter command…" />
+                <button id="term-btn-run">▶ Run</button>
+                <button id="term-btn-kill" class="kill-btn" style="display:none">■ Kill</button>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer" id="footer">
+            <span class="footer-meta" id="footer-meta"></span>
+            <button class="btn" id="btn-copy">📋 Copy</button>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer, clipboard } = require('electron');
+
+        // ── Mode configuration ─────────────────────────────
+        const MODES = {
+            blueprint: {
+                icon: '🔧', title: 'BLUEPRINT',
+                accent: '#00bcd4',
+                accentDim: 'rgba(0, 188, 212, 0.18)',
+                accentGlow: 'rgba(0, 188, 212, 0.5)',
+                accentFaint: 'rgba(0, 188, 212, 0.07)',
+                border: 'rgba(0, 188, 212, 0.15)',
+                borderMed: 'rgba(0, 188, 212, 0.3)',
+                dotColor: 'rgba(0, 188, 212, 0.14)',
+            },
+            teach: {
+                icon: '📖', title: 'TEACH ME',
+                accent: '#14b8a6',
+                accentDim: 'rgba(20, 184, 166, 0.18)',
+                accentGlow: 'rgba(20, 184, 166, 0.5)',
+                accentFaint: 'rgba(20, 184, 166, 0.07)',
+                border: 'rgba(20, 184, 166, 0.15)',
+                borderMed: 'rgba(20, 184, 166, 0.3)',
+                dotColor: 'rgba(20, 184, 166, 0.14)',
+            },
+            dive: {
+                icon: '🔎', title: 'DEEP DIVE',
+                accent: '#f5a623',
+                accentDim: 'rgba(245, 166, 35, 0.18)',
+                accentGlow: 'rgba(245, 166, 35, 0.5)',
+                accentFaint: 'rgba(245, 166, 35, 0.06)',
+                border: 'rgba(245, 166, 35, 0.12)',
+                borderMed: 'rgba(245, 166, 35, 0.22)',
+                dotColor: 'rgba(245, 166, 35, 0.06)',
+            },
+            terminal: {
+                icon: '⌘', title: 'TERMINAL',
+                accent: '#f5a623',
+                accentDim: 'rgba(245, 166, 35, 0.18)',
+                accentGlow: 'rgba(245, 166, 35, 0.5)',
+                accentFaint: 'rgba(245, 166, 35, 0.06)',
+                border: 'rgba(245, 166, 35, 0.12)',
+                borderMed: 'rgba(245, 166, 35, 0.22)',
+                dotColor: 'rgba(245, 166, 35, 0.06)',
+            },
+        };
+
+        let currentMode = 'blueprint';
+        let currentText = { blueprint: '', teach: '', dive: '' };
+        let currentOutput = { blueprint: '', teach: '', dive: '' };
+
+        // ── Theme switching ────────────────────────────────
+        function setTheme(mode) {
+            const m = MODES[mode];
+            const r = document.documentElement.style;
+            r.setProperty('--accent', m.accent);
+            r.setProperty('--accent-dim', m.accentDim);
+            r.setProperty('--accent-glow', m.accentGlow);
+            r.setProperty('--accent-faint', m.accentFaint);
+            r.setProperty('--border', m.border);
+            r.setProperty('--border-med', m.borderMed);
+            document.getElementById('header-icon').textContent = m.icon;
+            document.getElementById('header-title').textContent = m.title;
+            // Dot grid
+            document.body.style.setProperty('--dot-grid',
+                `radial-gradient(circle, ${m.dotColor} 1px, transparent 1px)`);
+        }
+
+        function switchMode(mode) {
+            if (!MODES[mode]) return;
+            currentMode = mode;
+            setTheme(mode);
+
+            // Tab active state
+            document.querySelectorAll('.tab-bar button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === mode);
+            });
+
+            // Content visibility
+            document.querySelectorAll('.mode-content').forEach(el => {
+                el.classList.toggle('active', el.id === 'mode-' + mode);
+            });
+
+            // Reset progress/status for new mode
+            setProgress(0);
+            setStatus('Ready');
+            document.getElementById('status-bar').style.display = 'none';
+        }
+
+        // ── Clear context for a mode ────────────────────────
+        function clearMode(mode) {
+            const prefix = mode === 'dive' ? 'dive' : mode === 'teach' ? 'teach' : 'bp';
+            const defaults = { bp: 'Highlight something to analyse', teach: 'Highlight something to learn about', dive: 'Highlight something to analyse deeply' };
+            // Reset preview text
+            const previewText = document.getElementById(prefix + '-preview-text');
+            if (previewText) previewText.innerHTML = '<i style="color:#475569">' + defaults[prefix] + '</i>';
+            // Show preview, hide output
+            const previewWrap = document.getElementById(prefix + '-preview-wrap');
+            const contentEl = document.getElementById(prefix + '-content');
+            const outputEl = document.getElementById(prefix + '-output');
+            const loadingEl = document.getElementById(prefix + '-loading');
+            if (previewWrap) previewWrap.style.display = 'flex';
+            if (contentEl) contentEl.style.display = 'none';
+            if (outputEl) outputEl.innerHTML = '';
+            if (loadingEl) loadingEl.style.display = 'none';
+            document.getElementById('footer').style.display = 'none';
+            setProgress(0);
+            setStatus('Ready');
+            document.getElementById('status-bar').style.display = 'none';
+            // Clear stored data
+            currentText[mode] = '';
+            currentOutput[mode] = '';
+            // Cancel any active requests for this mode
+            if (mode === 'blueprint') ipcRenderer.send('blueprint-cancel');
+            if (mode === 'teach') ipcRenderer.send('blueprint-cancel');
+            if (mode === 'dive') ipcRenderer.send('deep-dive-cancel');
+        }
+
+        // ── Tab clicks ─────────────────────────────────────
+        document.querySelectorAll('.tab-bar button').forEach(btn => {
+            btn.addEventListener('click', () => switchMode(btn.dataset.mode));
+        });
+
+        // ── Shared helpers ─────────────────────────────────
+        function setProgress(pct, done) {
+            const bar = document.getElementById('progress-bar');
+            bar.style.width = Math.min(pct, 100) + '%';
+            if (done) bar.classList.add('done'); else bar.classList.remove('done');
+        }
+
+        function setStatus(text, done) {
+            const bar = document.getElementById('status-bar');
+            const dot = document.getElementById('status-dot');
+            const txt = document.getElementById('status-text');
+            bar.style.display = 'flex';
+            txt.textContent = text;
+            if (done) dot.classList.add('done'); else dot.classList.remove('done');
+        }
+
+        function renderMarkdown(text) {
+            let codeBlocks = [], out = text;
+            out = out.replace(/```(\w*)\n([\s\S]*?)```/g, (m, lang, code) => {
+                const idx = codeBlocks.length;
+                const esc = code.trim().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                codeBlocks.push(`<pre data-lang="${lang}"><code>${esc}</code></pre>`);
+                return `\x00CB${idx}\x00`;
+            });
+            out = out.replace(/`([^`]+)`/g, (m, c) => `<code>${c.replace(/</g, '&lt;')}</code>`);
+            out = out.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+            out = out.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+            out = out.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+            out = out.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            out = out.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            out = out.replace(/^---$/gm, '<hr>');
+            out = out.replace(/^\s*[-*] (.+)$/gm, '<li>$1</li>');
+            out = out.replace(/((<li>[\s\S]*?<\/li>\n?)+)/g, '<ul>$1</ul>');
+            out = out.replace(/^(?!<[hupoli]|<ul|<hr)(.+)$/gm, '<p>$1</p>');
+            out = out.replace(/\x00CB(\d+)\x00/g, (m, i) => codeBlocks[+i]);
+            return out;
+        }
+
+        function showOutput(mode, text) {
+            currentOutput[mode] = text;
+            const prefix = mode === 'dive' ? 'dive' : mode === 'teach' ? 'teach' : 'bp';
+            const outputEl = document.getElementById(prefix + '-output');
+            const contentEl = document.getElementById(prefix + '-content');
+            const previewEl = document.getElementById(prefix + '-preview-wrap');
+            const loadingEl = document.getElementById(prefix + '-loading');
+
+            outputEl.innerHTML = renderMarkdown(text);
+            contentEl.style.display = 'block';
+            if (previewEl) previewEl.style.display = 'none';
+            if (loadingEl) loadingEl.style.display = 'none';
+
+            setProgress(100, true);
+            setStatus('Complete', true);
+
+            const footer = document.getElementById('footer');
+            footer.style.display = 'flex';
+            document.getElementById('footer-meta').textContent = `${text.split(' ').length} words`;
+        }
+
+        function showPreview(mode, text) {
+            currentText[mode] = text;
+            const prefix = mode === 'dive' ? 'dive' : mode === 'teach' ? 'teach' : 'bp';
+            const previewText = document.getElementById(prefix + '-preview-text');
+            const previewWrap = document.getElementById(prefix + '-preview-wrap');
+            const contentEl = document.getElementById(prefix + '-content');
+
+            const display = text.length > 300 ? text.substring(0, 300) + '…' : text;
+            previewText.textContent = display;
+            previewWrap.style.display = 'flex';
+            contentEl.style.display = 'none';
+            document.getElementById('footer').style.display = 'none';
+        }
+
+        // ── Blueprint IPC ──────────────────────────────────
+        document.getElementById('bp-btn-confirm').addEventListener('click', () => {
+            const text = currentText.blueprint;
+            if (!text || text.trim().length < 1) return;
+            ipcRenderer.send('blueprint-generate', text.trim());
+            document.getElementById('bp-preview-wrap').style.display = 'none';
+            document.getElementById('bp-loading').style.display = 'flex';
+            document.getElementById('bp-loading-prompt').textContent = text.trim().substring(0, 200);
+            document.getElementById('status-bar').style.display = 'flex';
+            setProgress(5);
+            setStatus('Connecting to Manifesto Engine…');
+        });
+
+        ipcRenderer.on('bp-preview', (_, data) => {
+            switchMode('blueprint');
+            showPreview('blueprint', data.text || data);
+        });
+        ipcRenderer.on('bp-init', (_, data) => {
+            switchMode('blueprint');
+            if (data.prompt) showPreview('blueprint', data.prompt);
+        });
+        ipcRenderer.on('bp-progress', (_, { pct, status }) => {
+            setProgress(pct);
+            if (status) setStatus(status);
+        });
+        ipcRenderer.on('bp-ready', (_, data) => {
+            showOutput('blueprint', data.manifesto || data.text || '');
+        });
+        ipcRenderer.on('bp-error', (_, msg) => {
+            const prefix = currentMode === 'teach' ? 'teach' : currentMode === 'dive' ? 'dive' : 'bp';
+            const outputEl = document.getElementById(prefix + '-output');
+            const contentEl = document.getElementById(prefix + '-content');
+            outputEl.innerHTML = `<p style="color:#f85149">⚠ ${msg}</p>`;
+            contentEl.style.display = 'block';
+            document.getElementById(prefix + '-preview-wrap').style.display = 'none';
+            const loadingEl = document.getElementById(prefix + '-loading');
+            if (loadingEl) loadingEl.style.display = 'none';
+            setProgress(0);
+            setStatus('Error', true);
+        });
+
+        // ── Teach IPC ──────────────────────────────────────
+        document.getElementById('teach-btn-confirm').addEventListener('click', () => {
+            const text = currentText.teach;
+            if (!text || text.trim().length < 1) return;
+            ipcRenderer.send('teach-start', text.trim());
+            document.getElementById('teach-preview-wrap').style.display = 'none';
+            document.getElementById('teach-content').style.display = 'block';
+            document.getElementById('teach-output').innerHTML = '';
+            document.getElementById('status-bar').style.display = 'flex';
+            setProgress(10);
+            setStatus('Thinking…');
+        });
+
+        ipcRenderer.on('teach-preview', (_, payload) => {
+            const text = typeof payload === 'string' ? payload : payload.text;
+            switchMode('teach');
+            showPreview('teach', text || '');
+        });
+        ipcRenderer.on('teach-ready', (_, { text }) => {
+            showOutput('teach', text);
+        });
+
+        // ── Dive IPC ───────────────────────────────────────
+        document.getElementById('dive-btn-confirm').addEventListener('click', () => {
+            const text = currentText.dive;
+            if (!text || text.trim().length < 1) return;
+            ipcRenderer.send('deep-dive-start', text.trim());
+            document.getElementById('dive-preview-wrap').style.display = 'none';
+            document.getElementById('dive-content').style.display = 'block';
+            document.getElementById('dive-output').innerHTML = '';
+            document.getElementById('status-bar').style.display = 'flex';
+            setProgress(15);
+            setStatus('Analysing…');
+        });
+
+        ipcRenderer.on('dd-preview', (_, data) => {
+            switchMode('dive');
+            showPreview('dive', data.text || data);
+        });
+        ipcRenderer.on('dd-progress', (_, { pct, status }) => {
+            setProgress(pct);
+            if (status) setStatus(status);
+        });
+        ipcRenderer.on('dd-ready', (_, { text }) => {
+            showOutput('dive', text);
+        });
+        ipcRenderer.on('dd-error', (_, msg) => {
+            const outputEl = document.getElementById('dive-output');
+            const contentEl = document.getElementById('dive-content');
+            outputEl.innerHTML = `<p style="color:#f85149">⚠ ${msg}</p>`;
+            contentEl.style.display = 'block';
+            document.getElementById('dive-preview-wrap').style.display = 'none';
+            setProgress(0);
+            setStatus('Error', true);
+        });
+
+        // ── Terminal IPC ──────────────────────────────────
+        let termRunning = false;
+        const termOutput = document.getElementById('term-output');
+        const termCmd = document.getElementById('term-cmd');
+        const termBtnRun = document.getElementById('term-btn-run');
+        const termBtnKill = document.getElementById('term-btn-kill');
+
+        function appendTerm(text, cls) {
+            const span = document.createElement('span');
+            span.className = cls;
+            span.textContent = text;
+            termOutput.appendChild(span);
+            termOutput.scrollTop = termOutput.scrollHeight;
+        }
+
+        function setTermRunning(state) {
+            termRunning = state;
+            termBtnRun.style.display = state ? 'none' : '';
+            termBtnKill.style.display = state ? '' : 'none';
+        }
+
+        function runTermCmd() {
+            const cmd = termCmd.value.trim();
+            if (!cmd || termRunning) return;
+            termCmd.value = '';
+            appendTerm('\n', 'stdout');
+            appendTerm('locus ~ $ ' + cmd + '\n', 'prompt-marker');
+            setTermRunning(true);
+            ipcRenderer.send('terminal-exec', cmd);
+        }
+
+        termBtnRun.addEventListener('click', runTermCmd);
+        termCmd.addEventListener('keydown', e => {
+            if (e.key === 'Enter') { e.preventDefault(); runTermCmd(); }
+            e.stopPropagation();
+        });
+        termCmd.addEventListener('keyup', e => e.stopPropagation());
+        termBtnKill.addEventListener('click', () => {
+            ipcRenderer.send('terminal-kill');
+            appendTerm('\n^C (killed)\n', 'stderr');
+            setTermRunning(false);
+        });
+
+        ipcRenderer.on('terminal-stdout', (_, data) => appendTerm(data, 'stdout'));
+        ipcRenderer.on('terminal-stderr', (_, data) => appendTerm(data, 'stderr'));
+        ipcRenderer.on('terminal-exit', (_, code) => {
+            appendTerm(`\n[exit ${code}]\n`, 'exit-msg');
+            setTermRunning(false);
+        });
+
+        // ── Switch tab via IPC ─────────────────────────────
+        ipcRenderer.on('companion-switch', (_, { mode, text }) => {
+            switchMode(mode);
+            if (text && text.trim().length >= 1) {
+                // Reset previous output for this mode so preview shows clean
+                const prefix = mode === 'dive' ? 'dive' : mode === 'teach' ? 'teach' : 'bp';
+                const contentEl = document.getElementById(prefix + '-content');
+                const outputEl = document.getElementById(prefix + '-output');
+                const loadingEl = document.getElementById(prefix + '-loading');
+                if (contentEl) contentEl.style.display = 'none';
+                if (outputEl) outputEl.innerHTML = '';
+                if (loadingEl) loadingEl.style.display = 'none';
+                document.getElementById('footer').style.display = 'none';
+                setProgress(0);
+                setStatus('Ready');
+                document.getElementById('status-bar').style.display = 'none';
+                currentOutput[mode] = '';
+                showPreview(mode, text.trim());
+            }
+        });
+
+        // ── Auto-update preview when user highlights new text ──
+        ipcRenderer.on('companion-context-update', (_, text) => {
+            if (!text || text.trim().length < 1) return;
+            const mode = currentMode;
+            const prefix = mode === 'dive' ? 'dive' : mode === 'teach' ? 'teach' : 'bp';
+            // Reset previous output so fresh preview shows
+            const contentEl = document.getElementById(prefix + '-content');
+            const outputEl = document.getElementById(prefix + '-output');
+            const loadingEl = document.getElementById(prefix + '-loading');
+            if (contentEl) contentEl.style.display = 'none';
+            if (outputEl) outputEl.innerHTML = '';
+            if (loadingEl) loadingEl.style.display = 'none';
+            document.getElementById('footer').style.display = 'none';
+            setProgress(0);
+            setStatus('Ready');
+            document.getElementById('status-bar').style.display = 'none';
+            currentOutput[mode] = '';
+            showPreview(mode, text.trim());
+        });
+
+        // ── Copy ───────────────────────────────────────────
+        document.getElementById('btn-copy').addEventListener('click', () => {
+            const text = currentOutput[currentMode];
+            if (!text) return;
+            clipboard.writeText(text);
+            const btn = document.getElementById('btn-copy');
+            btn.textContent = '✓ Copied'; btn.classList.add('success');
+            setTimeout(() => { btn.textContent = '📋 Copy'; btn.classList.remove('success'); }, 2000);
+        });
+
+        // ── Header Clear Button ───────────────────────────
+        document.getElementById('btn-clear').addEventListener('click', () => {
+            clearMode(currentMode);
+        });
+
+        // ── Close ──────────────────────────────────────────
+        document.getElementById('btn-close').addEventListener('click', () => {
+            const panel = document.getElementById('panel');
+            panel.classList.add('closing');
+            setTimeout(() => window.close(), 220);
+        });
+
+        ipcRenderer.on('close-panel', () => {
+            const panel = document.getElementById('panel');
+            panel.classList.add('closing');
+            setTimeout(() => window.close(), 190);
+        });
+
+        // Init
+        setTheme('blueprint');
+    </script>
+</body>
+
+</html>

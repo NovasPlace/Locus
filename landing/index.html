@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Locus — AI Everywhere You Work</title>
+  <meta name="description" content="Locus is a system-wide AI overlay. Highlight any text on your screen and get instant analysis, blueprints, and explanations — without switching apps." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ═══ NAV ═══ -->
+  <nav class="nav" id="nav">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo">
+        <span class="logo-cursor">◈</span>
+        <span class="logo-text">Locus</span>
+      </a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#how">How it works</a>
+        <a href="#providers">Providers</a>
+        <a href="#pricing">Pricing</a>
+      </div>
+      <div class="nav-actions">
+        <a href="#" class="btn btn-ghost">Log in</a>
+        <a href="#" class="btn btn-cta">Download free</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ═══ HERO ═══ -->
+  <section class="hero" id="hero">
+    <div class="hero-glow hero-glow-1"></div>
+    <div class="hero-glow hero-glow-2"></div>
+    <div class="hero-glow hero-glow-3"></div>
+
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        System-wide AI overlay · v4.2
+      </div>
+      <h1 class="hero-headline">
+        AI that lives<br />
+        <span class="headline-accent">where you work.</span>
+      </h1>
+      <p class="hero-sub">
+        Highlight any text on your screen. Locus appears instantly — no app switching, no copy-paste, no context lost. Blueprint, explain, teach, or deep-dive. All with your own models.
+      </p>
+      <div class="hero-ctas">
+        <a href="#" class="btn btn-primary btn-lg" id="hero-download">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 16l-6-6h4V4h4v6h4l-6 6z"/><rect x="4" y="18" width="16" height="2" rx="1"/></svg>
+          Download for Linux
+        </a>
+        <a href="#" class="btn btn-outline btn-lg" id="hero-watch">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          Watch demo
+        </a>
+      </div>
+      <div class="hero-trust-row">
+        <div class="avatar-stack" aria-hidden="true">
+          <span class="av" style="background: hsl(185,60%,38%)">S</span>
+          <span class="av" style="background: hsl(255,55%,52%)">M</span>
+          <span class="av" style="background: hsl(38,75%,48%)">R</span>
+          <span class="av" style="background: hsl(168,55%,38%)">A</span>
+          <span class="av" style="background: hsl(340,60%,48%)">J</span>
+        </div>
+        <span class="hero-trust-text"><strong>2,400+</strong> builders using it &nbsp;·&nbsp; No account required &nbsp;·&nbsp; Runs fully local</span>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="screen-mockup">
+        <div class="screen-bar">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+          <span class="screen-title">authenticate.py — Project_Delta</span>
+        </div>
+        <div class="screen-body">
+          <img src="hero-screenshot.png" alt="Locus AI overlay on a code editor" class="hero-img" id="hero-img" />
+          <!-- Animated overlay elements -->
+          <div class="floating-toolbar" id="toolbar-anim">
+            <button class="tool-btn active" title="Blueprint">⚡</button>
+            <button class="tool-btn" title="Explain">💡</button>
+            <button class="tool-btn" title="Teach me">📖</button>
+            <button class="tool-btn" title="Deep dive">🔬</button>
+            <button class="tool-btn" title="Copy">📋</button>
+          </div>
+          <div class="highlight-target">
+            <code>function authenticate(user)</code>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ LOGOS / TRUST BAR ═══ -->
+  <div class="trust-bar">
+    <span class="trust-label">Works with your models</span>
+    <div class="trust-logos">
+      <span class="trust-logo">Ollama</span>
+      <span class="trust-sep">·</span>
+      <span class="trust-logo">OpenAI</span>
+      <span class="trust-sep">·</span>
+      <span class="trust-logo">Anthropic</span>
+      <span class="trust-sep">·</span>
+      <span class="trust-logo">Gemini</span>
+      <span class="trust-sep">·</span>
+      <span class="trust-logo">Any OpenAI-compatible</span>
+    </div>
+    <div class="trust-divider"></div>
+    <div class="trust-stat">
+      <span class="trust-stat-num">2,400+</span>
+      <span class="trust-stat-label">active installs</span>
+    </div>
+    <div class="trust-stat">
+      <span class="trust-stat-num">4.8★</span>
+      <span class="trust-stat-label">avg rating</span>
+    </div>
+  </div>
+
+  <!-- ═══ SOCIAL PROOF ═══ -->
+  <section class="social-proof" id="social-proof">
+    <div class="sp-grid">
+
+      <div class="sp-card">
+        <div class="sp-stars" aria-label="5 stars">★★★★★</div>
+        <blockquote class="sp-quote">&ldquo;I highlighted a gnarly auth error in my terminal and had a root cause + fix in under 10 seconds. Nothing else does this without an app switch.&rdquo;</blockquote>
+        <div class="sp-author">
+          <span class="sp-av" style="background: hsl(185,60%,38%)">S</span>
+          <div>
+            <div class="sp-name">Senior backend engineer</div>
+            <div class="sp-role">Using Locus with Ollama + llama3.2</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sp-card sp-card-featured">
+        <div class="sp-stars" aria-label="5 stars">★★★★★</div>
+        <blockquote class="sp-quote">&ldquo;Blueprint mode is the first thing that's actually made me faster at architecting. I highlight a spec paragraph and get a full file manifest. It's not a toy — it's a tool.&rdquo;</blockquote>
+        <div class="sp-author">
+          <span class="sp-av" style="background: hsl(255,55%,52%)">M</span>
+          <div>
+            <div class="sp-name">Staff engineer, fintech</div>
+            <div class="sp-role">Using Locus with Claude 3.5 Sonnet</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sp-card">
+        <div class="sp-stars" aria-label="5 stars">★★★★★</div>
+        <blockquote class="sp-quote">&ldquo;I was sceptical of another AI tool but the local-first model won me over. My code never leaves my machine unless I say so. That's rare.&rdquo;</blockquote>
+        <div class="sp-author">
+          <span class="sp-av" style="background: hsl(38,75%,48%)">R</span>
+          <div>
+            <div class="sp-name">Security engineer</div>
+            <div class="sp-role">Using Locus fully offline with Qwen2.5</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══ FEATURES ═══ -->
+  <section class="features" id="features">
+    <div class="section-label">What it does</div>
+    <h2 class="section-title">Four modes.<br />One activation.</h2>
+    <p class="section-sub">Highlight text anywhere. Locus reads your selection and routes it to the right mode automatically — or you choose.</p>
+
+    <div class="features-grid">
+
+      <div class="feature-card feature-bp" id="feat-blueprint">
+        <div class="feat-icon">⚡</div>
+        <h3>Blueprint</h3>
+        <p>Turn highlighted descriptions, requirements, or ideas into full technical blueprints — architecture, file manifest, data models, build order.</p>
+        <div class="feat-tag">Default mode</div>
+      </div>
+
+      <div class="feature-card feature-teach" id="feat-teach">
+        <div class="feat-icon">📖</div>
+        <h3>Teach Me</h3>
+        <p>Highlight any concept, code snippet, or paragraph. Locus explains it from first principles, calibrating depth to your level.</p>
+        <div class="feat-tag">Learning mode</div>
+      </div>
+
+      <div class="feature-card feature-dive" id="feat-dive">
+        <div class="feat-icon">🔬</div>
+        <h3>Deep Dive</h3>
+        <p>Expands on any Teach Me response. Opens a connected south panel that digs into edge cases, tradeoffs, and related concepts.</p>
+        <div class="feat-tag">Research mode</div>
+      </div>
+
+      <div class="feature-card feature-term" id="feat-terminal">
+        <div class="feat-icon">⬛</div>
+        <h3>Terminal</h3>
+        <p>A persistent terminal tab inside the companion panel. Run commands and get AI analysis of their output without leaving the overlay.</p>
+        <div class="feat-tag">Dev mode</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══ HOW IT WORKS ═══ -->
+  <section class="how" id="how">
+    <div class="section-label">How it works</div>
+    <h2 class="section-title">Three seconds from thought to answer.</h2>
+
+    <div class="steps">
+      <div class="step" id="step-1">
+        <div class="step-num">01</div>
+        <div class="step-body">
+          <h3>Highlight anything</h3>
+          <p>Select any text on your screen — code, docs, a PDF, a webpage, a terminal. The Locus toolbar appears at your cursor within 60ms.</p>
+        </div>
+        <div class="step-demo">
+          <div class="demo-selection">
+            <span class="sel-text">const jwt = require(<span class="sel-hl">'jsonwebtoken'</span>)</span>
+          </div>
+          <div class="demo-toolbar-mini">
+            <span>⚡</span><span>💡</span><span>📖</span><span>🔬</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-connector"></div>
+
+      <div class="step" id="step-2">
+        <div class="step-num">02</div>
+        <div class="step-body">
+          <h3>Pick a mode</h3>
+          <p>Click Blueprint, Explain, Teach Me, or Deep Dive. Or let Locus auto-detect — it recognises code vs. prose vs. error messages.</p>
+        </div>
+        <div class="step-demo">
+          <div class="demo-modes">
+            <div class="demo-mode active">⚡ Blueprint</div>
+            <div class="demo-mode">💡 Explain</div>
+            <div class="demo-mode">📖 Teach</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-connector"></div>
+
+      <div class="step" id="step-3">
+        <div class="step-num">03</div>
+        <div class="step-body">
+          <h3>Get the answer</h3>
+          <p>Locus streams the response in a glass panel alongside your screen. No window. No app switch. No lost context. Copy, pin, or export with one click.</p>
+        </div>
+        <div class="step-demo demo-response">
+          <div class="resp-line resp-h2">## JWT Authentication Flow</div>
+          <div class="resp-line">Verify token using <span class="resp-code">jwt.verify()</span></div>
+          <div class="resp-line resp-dim">Check exp, iat, aud claims...</div>
+          <div class="resp-cursor">▊</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ COMPANION PANEL ═══ -->
+  <section class="companion-section" id="companion">
+    <div class="companion-inner">
+      <div class="companion-text">
+        <div class="section-label">Companion Panel</div>
+        <h2 class="section-title" style="font-size:2rem;">A persistent co-pilot, pinned to your window.</h2>
+        <p>The companion panel snaps to the right of the main overlay and stays open. Switch between Blueprint, Teach, Dive, and Terminal tabs without losing your thread.</p>
+        <ul class="companion-features">
+          <li><span class="cf-icon">🔗</span> Pushes context from main overlay with one click</li>
+          <li><span class="cf-icon">📌</span> Pin mode — stays open even when you click away</li>
+          <li><span class="cf-icon">🎨</span> Mode-aware theming (cyan / teal / amber per tab)</li>
+          <li><span class="cf-icon">⌨</span> Full terminal tab — run commands, get AI analysis</li>
+        </ul>
+      </div>
+      <div class="companion-mockup">
+        <div class="panel-window">
+          <div class="panel-titlebar">
+            <div class="panel-dots">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+            </div>
+            <span class="panel-name">Companion</span>
+            <div class="pin-btn">📌</div>
+          </div>
+          <div class="panel-tabs">
+            <button class="ptab active">⚡ Blueprint</button>
+            <button class="ptab">📖 Teach</button>
+            <button class="ptab">🔬 Dive</button>
+            <button class="ptab">⬛ Term</button>
+          </div>
+          <div class="panel-content">
+            <div class="pc-context">
+              <span class="ctx-lang">python</span>
+              <code>def authenticate(user, password):</code>
+            </div>
+            <div class="pc-output">
+              <div class="pc-h1"># Auth Service Blueprint</div>
+              <div class="pc-line">## 1. Data Models</div>
+              <div class="pc-code">User(id, email, hash, role)</div>
+              <div class="pc-code">Session(token, exp, device)</div>
+              <div class="pc-line">## 2. Handlers</div>
+              <div class="pc-key">login() → JWT + refresh</div>
+              <div class="pc-key">verify() → user payload</div>
+              <div class="pc-key">revoke() → blacklist</div>
+              <div class="pc-cursor">▊</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ PROVIDERS ═══ -->
+  <section class="providers" id="providers">
+    <div class="section-label">Multi-provider</div>
+    <h2 class="section-title">Your models. Your data.</h2>
+    <p class="section-sub">Locus never sends your text to a cloud unless you choose to. Run fully local with Ollama. Or connect your own OpenAI, Anthropic, or Gemini keys.</p>
+    <div class="providers-grid">
+      <div class="provider-card" id="prov-ollama">
+        <div class="prov-icon">🖥</div>
+        <h3>Ollama</h3>
+        <p>100% local. Zero latency. Zero cost. Runs any model you have pulled — Llama, Mistral, Qwen, Phi.</p>
+        <span class="prov-badge prov-local">Local</span>
+      </div>
+      <div class="provider-card" id="prov-openai">
+        <div class="prov-icon">◎</div>
+        <h3>OpenAI</h3>
+        <p>GPT-4o, GPT-4, GPT-3.5. Bring your own key — Locus stores it locally in your config file.</p>
+        <span class="prov-badge prov-cloud">Cloud</span>
+      </div>
+      <div class="provider-card" id="prov-anthropic">
+        <div class="prov-icon">◈</div>
+        <h3>Anthropic</h3>
+        <p>Claude 3.5 Sonnet, Haiku, Opus. Exceptional at long context, analysis, and teaching.</p>
+        <span class="prov-badge prov-cloud">Cloud</span>
+      </div>
+      <div class="provider-card" id="prov-compat">
+        <div class="prov-icon">⚙</div>
+        <h3>Any OpenAI-compat</h3>
+        <p>Point at any local or remote OpenAI-compatible endpoint. LM Studio, Groq, Together, and more.</p>
+        <span class="prov-badge prov-flex">Flexible</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ PRICING ═══ -->
+  <section class="pricing" id="pricing">
+    <div class="section-label">Pricing</div>
+    <h2 class="section-title">Start free. Stay free.</h2>
+    <p class="section-sub">The core experience is free forever. Pro unlocks persistent memory and team features.</p>
+
+    <div class="plans">
+      <div class="plan plan-free" id="plan-free">
+        <div class="plan-header">
+          <div class="plan-name">Core</div>
+          <div class="plan-price">Free</div>
+          <div class="plan-period">forever</div>
+        </div>
+        <ul class="plan-features">
+          <li>✓ All 4 modes (Blueprint, Teach, Dive, Terminal)</li>
+          <li>✓ Local Ollama models</li>
+          <li>✓ Bring-your-own API keys</li>
+          <li>✓ Companion panel</li>
+          <li>✓ Multi-provider</li>
+          <li>✓ AppImage + .deb packages</li>
+        </ul>
+        <a href="#" class="btn btn-outline btn-full" id="plan-free-cta">Download free</a>
+      </div>
+
+      <div class="plan plan-pro" id="plan-pro">
+        <div class="plan-glow"></div>
+        <div class="plan-badge-top">Most popular</div>
+        <div class="plan-header">
+          <div class="plan-name">Pro</div>
+          <div class="plan-price">$9<span>/mo</span></div>
+          <div class="plan-period">billed monthly</div>
+        </div>
+        <ul class="plan-features">
+          <li>✓ Everything in Core</li>
+          <li>✓ CortexDB persistent memory</li>
+          <li>✓ Knowledge base sync</li>
+          <li>✓ Session history</li>
+          <li>✓ Priority model routing</li>
+          <li>✓ Windows support (beta)</li>
+        </ul>
+        <a href="#" class="btn btn-primary btn-full" id="plan-pro-cta">Get Pro</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ CTA ═══ -->
+  <section class="final-cta">
+    <div class="final-glow"></div>
+    <div class="cta-cursor">◈</div>
+    <h2>AI that moves as fast as you do.</h2>
+    <p>No switching tabs. No copy-paste. No subscriptions for basic use.<br />Just highlight and ask.</p>
+    <a href="#" class="btn btn-primary btn-xl" id="final-download">Download Locus — it's free</a>
+    <div class="cta-trust">
+      <span class="cta-stars">★★★★★</span>
+      <span class="cta-trust-text">4.8 / 5 across 2,400+ installs &nbsp;·&nbsp; No account required &nbsp;·&nbsp; AppImage or .deb · ~180MB</span>
+    </div>
+  </section>
+
+  <!-- ═══ FOOTER ═══ -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-logo">
+        <span class="logo-cursor">◈</span>
+        <span class="logo-text">Locus</span>
+      </div>
+      <div class="footer-links">
+        <a href="#">GitHub</a>
+        <a href="#">Privacy</a>
+        <a href="#">Discord</a>
+        <a href="#">Changelog</a>
+      </div>
+      <div class="footer-right">
+        <span class="status-dot"></span> v4.2.1 — stable
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

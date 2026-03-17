@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Deep Dive</title>
+    <style>
+        :root {
+            --navy: #0a0f1e;
+            --navy-light: #0d1428;
+            --navy-card: #111827;
+            --amber: #f5a623;
+            --amber-dim: rgba(245, 166, 35, 0.18);
+            --amber-glow: rgba(245, 166, 35, 0.5);
+            --amber-faint: rgba(245, 166, 35, 0.06);
+            --border: rgba(245, 166, 35, 0.12);
+            --border-med: rgba(245, 166, 35, 0.22);
+            --text: #c9d1d9;
+            --text-muted: #8b949e;
+            --text-dim: #4a5568;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: transparent;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            font-family: -apple-system, 'Inter', 'Segoe UI', sans-serif;
+            font-size: 13px;
+        }
+
+        /* ── Amber hinge connector (top edge — connects to Teach Me panel above) */
+        .connector {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg,
+                    transparent 0%,
+                    var(--amber-glow) 20%,
+                    var(--amber) 50%,
+                    var(--amber-glow) 80%,
+                    transparent 100%);
+            box-shadow: 0 0 12px var(--amber-glow), 0 0 24px rgba(245, 166, 35, 0.2);
+            z-index: 10;
+        }
+
+        /* Connector pulse — flares on data flow */
+        @keyframes connectorPulse {
+            0% {
+                box-shadow: 0 0 12px var(--amber-glow);
+            }
+
+            50% {
+                box-shadow: 0 0 28px var(--amber), 0 0 48px var(--amber-glow);
+            }
+
+            100% {
+                box-shadow: 0 0 12px var(--amber-glow);
+            }
+        }
+
+        .connector.pulse {
+            animation: connectorPulse 400ms ease-out;
+        }
+
+        /* ── Hinge swing from top — opens downward from teach panel ── */
+        @keyframes hingeOpen {
+            from {
+                transform-origin: top center;
+                transform: perspective(1400px) rotateX(72deg);
+                opacity: 0;
+            }
+
+            to {
+                transform-origin: top center;
+                transform: perspective(1400px) rotateX(0deg);
+                opacity: 1;
+            }
+        }
+
+        @keyframes hingeClose {
+            from {
+                transform-origin: top center;
+                transform: perspective(1400px) rotateX(0deg);
+                opacity: 1;
+            }
+
+            to {
+                transform-origin: top center;
+                transform: perspective(1400px) rotateX(72deg);
+                opacity: 0;
+            }
+        }
+
+        .panel {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: var(--navy);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform-origin: left center;
+            animation: hingeOpen 210ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+        }
+
+        .panel.closing {
+            animation: hingeClose 180ms cubic-bezier(0.55, 0, 0.55, 0.2) forwards;
+        }
+
+        /* dot-grid bg */
+        .panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(circle, rgba(245, 166, 35, 0.06) 1px, transparent 1px);
+            background-size: 22px 22px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Header */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 14px 10px 18px;
+            background: rgba(10, 15, 30, 0.95);
+            border-bottom: 1px solid var(--border);
+            -webkit-app-region: drag;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 2;
+        }
+
+        .header-icon {
+            font-size: 15px;
+            filter: drop-shadow(0 0 6px var(--amber-glow));
+        }
+
+        .header-title {
+            font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--amber);
+            letter-spacing: 0.04em;
+            text-shadow: 0 0 10px var(--amber-glow);
+            flex: 1;
+        }
+
+        .header-badge {
+            font-size: 10px;
+            color: var(--text-dim);
+            font-family: monospace;
+            background: var(--amber-faint);
+            border: 1px solid var(--border);
+            padding: 2px 7px;
+            border-radius: 10px;
+        }
+
+        .close-btn {
+            -webkit-app-region: no-drag;
+            background: none;
+            border: 1px solid rgba(245, 166, 35, 0.2);
+            color: var(--text-muted);
+            width: 22px;
+            height: 22px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .close-btn:hover {
+            background: rgba(248, 81, 73, 0.15);
+            border-color: rgba(248, 81, 73, 0.4);
+            color: #f85149;
+        }
+
+        /* ── Slim amber progress line */
+        .progress-wrap {
+            height: 2px;
+            background: var(--navy-light);
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--amber), rgba(245, 166, 35, 0.4));
+            transition: width 0.4s ease;
+            box-shadow: 0 0 8px var(--amber-glow);
+        }
+
+        .progress-bar.done {
+            width: 100%;
+        }
+
+        /* ── Status */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 14px 4px 18px;
+            background: var(--navy-light);
+            border-bottom: 1px solid var(--border);
+            font-size: 10px;
+            color: var(--text-dim);
+            font-family: monospace;
+            flex-shrink: 0;
+        }
+
+        .status-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--amber);
+            animation: pulse 1.5s ease infinite;
+        }
+
+        .status-dot.done {
+            animation: none;
+            background: #3fb950;
+            box-shadow: 0 0 4px rgba(63, 185, 80, 0.6);
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                box-shadow: 0 0 4px var(--amber);
+            }
+
+            50% {
+                opacity: 0.3;
+                box-shadow: none;
+            }
+        }
+
+        /* ── Content */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 18px 16px 18px 20px;
+            position: relative;
+            scrollbar-width: auto;
+            scrollbar-color: rgba(245, 166, 35, 0.4) rgba(0, 0, 0, 0.2);
+        }
+
+        .content::-webkit-scrollbar {
+            width: 9px;
+        }
+
+        .content::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 6px;
+        }
+
+        .content::-webkit-scrollbar-thumb {
+            background: rgba(245, 166, 35, 0.4);
+            border-radius: 6px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+
+        .content::-webkit-scrollbar-thumb:hover {
+            background: rgba(245, 166, 35, 0.7);
+            background-clip: content-box;
+        }
+
+        /* ── Markdown styles (amber accent) */
+        .dive {
+            position: relative;
+        }
+
+        .dive h1 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--amber);
+            text-shadow: 0 0 14px var(--amber-glow);
+            margin-bottom: 6px;
+            padding-bottom: 8px;
+            border-bottom: 1px dashed var(--border-med);
+            letter-spacing: 0.02em;
+        }
+
+        .dive h2 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--amber);
+            margin-top: 20px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            opacity: 0.85;
+        }
+
+        .dive h3 {
+            font-size: 11.5px;
+            font-weight: 600;
+            color: var(--text);
+            margin-top: 14px;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            opacity: 0.75;
+        }
+
+        .dive p {
+            color: var(--text);
+            margin-bottom: 10px;
+            font-size: 12.5px;
+            line-height: 1.7;
+        }
+
+        .dive ul,
+        .dive ol {
+            padding-left: 18px;
+            margin-bottom: 10px;
+        }
+
+        .dive li {
+            color: var(--text);
+            margin-bottom: 3px;
+            font-size: 12.5px;
+        }
+
+        .dive ul li::marker {
+            content: '◆  ';
+            color: var(--amber);
+            font-size: 8px;
+        }
+
+        .dive code {
+            background: var(--amber-faint);
+            color: var(--amber);
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11.5px;
+            border: 1px solid var(--border);
+        }
+
+        .dive pre {
+            background: var(--navy-card);
+            border: 1px solid var(--border-med);
+            border-left: 3px solid var(--amber);
+            border-radius: 0 6px 6px 0;
+            padding: 12px 14px;
+            margin: 10px 0 14px;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .dive pre::before {
+            content: attr(data-lang);
+            position: absolute;
+            top: 4px;
+            right: 8px;
+            font-size: 9px;
+            color: var(--amber);
+            opacity: 0.5;
+            font-family: monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .dive pre code {
+            background: transparent;
+            border: none;
+            padding: 0;
+            color: var(--text);
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .dive hr {
+            border: none;
+            border-top: 1px solid rgba(245, 166, 35, 0.2);
+            margin: 14px 0;
+        }
+
+        .dive hr.section-sep {
+            border-top: 1px solid rgba(245, 166, 35, 0.15);
+            margin: 6px 0 16px;
+            background: linear-gradient(90deg, rgba(245, 166, 35, 0.1), transparent);
+            height: 1px;
+            border: none;
+        }
+
+        .dive blockquote {
+            border-left: 2px solid var(--amber);
+            padding: 6px 12px;
+            margin: 10px 0;
+            background: var(--amber-faint);
+            color: var(--text-muted);
+            font-style: italic;
+            font-size: 12px;
+        }
+
+        .dive strong {
+            color: var(--amber);
+            font-weight: 600;
+        }
+
+        .key-term {
+            color: var(--amber);
+            font-weight: 600;
+        }
+
+        .dive table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0 14px;
+            font-size: 11.5px;
+        }
+
+        .dive th {
+            background: var(--amber-faint);
+            color: var(--amber);
+            font-weight: 600;
+            padding: 6px 10px;
+            border: 1px solid var(--border);
+            text-align: left;
+            font-family: monospace;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+        }
+
+        .dive td {
+            padding: 5px 10px;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        /* ── Typewriter cursor */
+        .tw-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 14px;
+            background: var(--amber);
+            margin-left: 1px;
+            vertical-align: text-bottom;
+            animation: blink 0.75s step-end infinite;
+            box-shadow: 0 0 6px var(--amber-glow);
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
+        }
+
+        /* ── Loading state */
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 14px;
+            padding-top: 8px;
+        }
+
+        .loading-prompt {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            background: var(--amber-faint);
+            border: 1px solid var(--border);
+            border-left: 2px solid var(--amber);
+            padding: 8px 12px;
+            border-radius: 0 4px 4px 0;
+            font-style: italic;
+            line-height: 1.5;
+            max-width: 100%;
+            word-break: break-word;
+        }
+
+        .scanning-lines {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .scan-line {
+            height: 6px;
+            background: var(--amber-faint);
+            border-radius: 3px;
+            animation: scanAnim 2s ease-in-out infinite;
+        }
+
+        .scan-line:nth-child(1) {
+            width: 80%;
+        }
+
+        .scan-line:nth-child(2) {
+            width: 60%;
+            animation-delay: 0.15s;
+        }
+
+        .scan-line:nth-child(3) {
+            width: 75%;
+            animation-delay: 0.3s;
+        }
+
+        .scan-line:nth-child(4) {
+            width: 50%;
+            animation-delay: 0.45s;
+        }
+
+        @keyframes scanAnim {
+
+            0%,
+            100% {
+                opacity: 0.12;
+            }
+
+            50% {
+                opacity: 0.4;
+                background: rgba(245, 166, 35, 0.2);
+            }
+        }
+
+        /* ── Footer */
+        .footer {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px 10px 18px;
+            background: rgba(10, 15, 30, 0.95);
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+            position: relative;
+            z-index: 2;
+        }
+
+        .footer-meta {
+            flex: 1;
+            font-size: 9px;
+            color: var(--text-dim);
+            font-family: monospace;
+            letter-spacing: 0.04em;
+        }
+
+        .btn {
+            padding: 5px 12px;
+            border-radius: 4px;
+            border: 1px solid var(--border-med);
+            background: var(--amber-faint);
+            color: var(--amber);
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-family: monospace;
+            letter-spacing: 0.03em;
+        }
+
+        .btn:hover {
+            background: var(--amber-dim);
+            border-color: var(--amber);
+            box-shadow: 0 0 8px var(--amber-glow);
+        }
+
+        .btn.success {
+            color: #3fb950;
+            border-color: rgba(63, 185, 80, 0.4);
+            background: rgba(63, 185, 80, 0.1);
+        }
+
+        .btn.cancel {
+            color: #f85149;
+            border-color: rgba(248, 81, 73, 0.4);
+            background: rgba(248, 81, 73, 0.06);
+        }
+
+        /* ── Error */
+        .error-state {
+            padding: 16px 0;
+            border-left: 2px solid rgba(248, 81, 73, 0.4);
+            padding-left: 12px;
+        }
+
+        .error-state .err-msg {
+            color: #ff7b72;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        /* ── Mode Select */
+        #mode-select {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            padding: 28px 20px;
+            height: 100%;
+        }
+
+        #mode-select .mode-prompt {
+            font-size: 11px;
+            letter-spacing: 0.1em;
+            color: rgba(245, 166, 35, 0.45);
+            text-transform: uppercase;
+        }
+
+        #mode-select .mode-context {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.2);
+            font-style: italic;
+            max-width: 340px;
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .mode-card-full {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding: 28px 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(245, 166, 35, 0.45);
+            color: var(--amber);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-align: center;
+            background: transparent;
+        }
+
+        .mode-card-full:hover {
+            background: rgba(245, 166, 35, 0.07);
+            border-color: rgba(245, 166, 35, 0.7);
+            box-shadow: 0 0 22px rgba(245, 166, 35, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .mode-card-full .card-icon {
+            font-size: 30px;
+        }
+
+        .mode-card-full .card-title {
+            font-family: monospace;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+        }
+
+        .mode-card-full .card-desc {
+            font-size: 10.5px;
+            opacity: 0.55;
+            line-height: 1.4;
+        }
+
+        .btn-reset-dd {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: color 0.15s;
+        }
+
+        .btn-reset-dd:hover {
+            color: rgba(255, 255, 255, 0.55);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="connector"></div>
+    <div class="panel" id="panel">
+
+        <!-- Header -->
+        <div class="header">
+            <span class="header-icon">🔎</span>
+            <span class="header-title" id="header-title">DEEP DIVE</span>
+            <span class="header-badge" id="header-badge">analysis</span>
+            <button class="btn-reset-dd" id="btn-reset" title="Choose a different mode" style="display:none">⟳</button>
+        </div>
+
+        <!-- Progress -->
+        <div class="progress-wrap">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+
+        <!-- Status -->
+        <div class="status-bar">
+            <div class="status-dot" id="status-dot"></div>
+            <span id="status-text">Initialising…</span>
+        </div>
+
+        <!-- Content -->
+        <div class="content" id="content">
+            <!-- Mode select (default when opened via Expand Workspace) -->
+            <div id="mode-select" style="display:none">
+                <div class="mode-prompt">Deep Dive</div>
+                <div class="mode-context" id="dd-mode-context"></div>
+                <div class="mode-card-full" id="card-analyse">
+                    <span class="card-icon">🔎</span>
+                    <span class="card-title">ANALYSE</span>
+                    <span class="card-desc">Run a focused, structured analysis on the highlighted context</span>
+                </div>
+            </div>
+
+            <!-- Preview state (confirm before analysis) -->
+            <div id="preview-state" style="display:none">
+                <div style="font-family:monospace;font-size:9px;color:var(--amber);letter-spacing:0.1em;opacity:0.7">
+                    CONTEXT</div>
+                <div id="preview-text"
+                    style="background:var(--navy-card);border:1px solid var(--border-med);border-left:2px solid var(--amber);border-radius:0 4px 4px 0;padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--text-muted);line-height:1.6;max-height:180px;overflow-y:auto;white-space:pre-wrap;word-break:break-word">
+                </div>
+                <div style="font-size:11px;color:var(--text-dim);font-style:italic">Select a section or paste context,
+                    then confirm below.</div>
+                <button id="btn-analyse"
+                    style="width:100%;padding:11px 0;background:var(--amber);border:none;border-radius:5px;color:var(--navy);font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;letter-spacing:0.06em;cursor:pointer;box-shadow:0 0 14px var(--amber-glow)">▶
+                    ANALYSE</button>
+                <button id="btn-preview-cancel"
+                    style="width:100%;padding:7px 0;background:none;border:1px solid rgba(248,81,73,0.3);border-radius:4px;color:rgba(248,81,73,0.7);font-size:11px;cursor:pointer">✕
+                    Cancel</button>
+            </div>
+
+            <div class="loading-state" id="loading-state" style="display:none">
+                <div class="loading-prompt" id="loading-prompt"></div>
+                <div class="scanning-lines">
+                    <div class="scan-line"></div>
+                    <div class="scan-line"></div>
+                    <div class="scan-line"></div>
+                    <div class="scan-line"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer (after generation) -->
+        <div class="footer" id="footer" style="display:none">
+            <span class="footer-meta" id="footer-meta"></span>
+            <button class="btn" id="btn-copy">📋 Copy</button>
+            <button class="btn" id="btn-close">✕ Close</button>
+        </div>
+
+        <!-- Cancel bar (during generation) -->
+        <div class="footer" id="cancel-bar">
+            <span class="footer-meta">Analysing…</span>
+            <button class="btn cancel" id="btn-cancel">🛑 Cancel</button>
+        </div>
+
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        let twTimer = null;
+        let fullText = '';
+        const startMs = Date.now();
+
+        function setStatus(text, done = false) {
+            document.getElementById('status-text').textContent = text;
+            const dot = document.getElementById('status-dot');
+            if (done) dot.classList.add('done'); else dot.classList.remove('done');
+        }
+
+        function setProgress(pct, done = false) {
+            const bar = document.getElementById('progress-bar');
+            bar.style.width = Math.min(pct, 100) + '%';
+            if (done) bar.classList.add('done');
+        }
+
+        function escHtml(s) {
+            return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function renderMd(text) {
+            const codeBlocks = [];
+
+            // Strip === separator lines before escaping
+            text = text.replace(/^={4,}\s*$/gm, '\x00SEP\x00');
+
+            let out = text.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+                const escaped = escHtml(code.trim());
+                const idx = codeBlocks.length;
+                codeBlocks.push(`<pre data-lang="${escHtml(lang || 'code')}"><code>${escaped}</code></pre>`);
+                return `\x00CB${idx}\x00`;
+            });
+
+            out = out.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            out = out.replace(/\x00SEP\x00/g, '<hr class="section-sep">');
+            out = out.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+            // Headings
+            out = out.replace(/^### (.+)$/gm, (_, t) => `<h3>${t}</h3>`);
+            out = out.replace(/^## (.+)$/gm, (_, t) => `<h2>${t}</h2>`);
+            out = out.replace(/^# (.+)$/gm, (_, t) => `<h1>${t}</h1>`);
+
+            // Tables
+            out = out.replace(/^\|(.+)\|$/gm, row => {
+                const cells = row.split('|').slice(1, -1).map(c => c.trim());
+                return '<tr>' + cells.map(c => `<td>${c}</td>`).join('') + '</tr>';
+            });
+            out = out.replace(/(<tr>.*<\/tr>\n)+/g, m => {
+                const rows = m.trim().split('\n');
+                const header = rows[0].replace(/<td>/g, '<th>').replace(/<\/td>/g, '</th>');
+                const body = rows.slice(2).join('\n');
+                return `<table>${header}${body}</table>`;
+            });
+
+            // Bold-colon key terms
+            out = out.replace(/\*\*([^*]+?):\*\*/g, '<span class="key-term">$1:</span>');
+            out = out.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            out = out.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+            // Lists
+            out = out.replace(/^[-*] (.+)$/gm, '<li>$1</li>');
+            out = out.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+            out = out.replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`);
+
+            out = out.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+            out = out.replace(/^---$/gm, '<hr>');
+
+            out = out.replace(/\n{2,}/g, '</p><p>');
+            out = '<p>' + out + '</p>';
+            out = out.replace(/<p><\/p>/g, '').replace(/<p>(<h[1-3]|<ul|<pre|<table|<hr|<blockquote)/g, '$1');
+            out = out.replace(/(<\/h[1-3]>|<\/ul>|<\/pre>|<\/table>|<hr>|<\/blockquote>)<\/p>/g, '$1');
+            out = out.replace(/\n/g, '<br>');
+
+            codeBlocks.forEach((block, i) => {
+                out = out.replace(`\x00CB${i}\x00`, block);
+            });
+            return out;
+        }
+
+        function typewrite(html, container, speed = 8) {
+            container.innerHTML = '';
+            const buf = document.createElement('div');
+            buf.className = 'dive';
+            container.appendChild(buf);
+            buf.innerHTML = html;
+
+            const cursor = document.createElement('span');
+            cursor.className = 'tw-cursor';
+
+            const walker = document.createTreeWalker(buf, NodeFilter.SHOW_TEXT);
+            const textNodes = [];
+            let node;
+            while (node = walker.nextNode()) { textNodes.push(node); }
+            textNodes.forEach(n => { n._full = n.nodeValue; n.nodeValue = ''; });
+
+            let ni = 0, ci = 0;
+            buf.appendChild(cursor);
+
+            function tick() {
+                if (ni >= textNodes.length) { cursor.remove(); return; }
+                const tn = textNodes[ni];
+                ci += speed;
+                tn.nodeValue = tn._full.slice(0, ci);
+                if (ci >= tn._full.length) { tn.nodeValue = tn._full; ni++; ci = 0; }
+                if (tn.parentNode) tn.parentNode.appendChild(cursor);
+                document.getElementById('content').scrollTop = 9999;
+                twTimer = requestAnimationFrame(tick);
+            }
+            twTimer = requestAnimationFrame(tick);
+        }
+
+        // ── IPC listeners ──────────────────────────────
+        let _pendingDiveText = '';
+
+        // Mode-select state — opened via Expand Workspace
+        function showDiveModeSelect(text) {
+            _pendingDiveText = text || '';
+            const snippet = _pendingDiveText.slice(0, 80) + (_pendingDiveText.length > 80 ? '\u2026' : '');
+            document.getElementById('dd-mode-context').textContent = snippet;
+            document.getElementById('mode-select').style.display = 'flex';
+            document.getElementById('preview-state').style.display = 'none';
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('cancel-bar').style.display = 'none';
+            document.getElementById('footer').style.display = 'none';
+            document.getElementById('btn-reset').style.display = 'none';
+            document.getElementById('header-badge').textContent = 'ready';
+            setStatus('Choose a mode below');
+            setProgress(0);
+        }
+
+        ipcRenderer.on('dd-mode-select', (_, data) => showDiveModeSelect(data.text));
+
+        document.getElementById('card-analyse').addEventListener('click', () => {
+            document.getElementById('mode-select').style.display = 'none';
+            document.getElementById('btn-reset').style.display = 'inline-block';
+            const display = _pendingDiveText.length > 400
+                ? _pendingDiveText.slice(0, 400) + '\u2026' : _pendingDiveText;
+            document.getElementById('preview-text').textContent = display;
+            document.getElementById('preview-state').style.display = 'flex';
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('header-badge').textContent = 'analysis';
+            setStatus('Ready \u2014 review context below');
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => showDiveModeSelect(_pendingDiveText));
+
+        // Preview state — from direct Dive shortcut (no mode-select step)
+        ipcRenderer.on('dd-preview', (_, data) => {
+            _pendingDiveText = data.text || '';
+            const display = _pendingDiveText.length > 400
+                ? _pendingDiveText.slice(0, 400) + '\u2026' : _pendingDiveText;
+            document.getElementById('preview-text').textContent = display;
+            document.getElementById('preview-state').style.display = 'flex';
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('cancel-bar').style.display = 'none';
+            document.getElementById('mode-select').style.display = 'none';
+            setStatus('Ready \u2014 review context below');
+            setProgress(0);
+        });
+
+        document.getElementById('btn-analyse').addEventListener('click', () => {
+            document.getElementById('preview-state').style.display = 'none';
+            document.getElementById('loading-state').style.display = 'flex';
+            document.getElementById('cancel-bar').style.display = 'flex';
+            setStatus('Analysing…');
+            ipcRenderer.send('deep-dive-start', _pendingDiveText);
+        });
+
+        document.getElementById('btn-preview-cancel').addEventListener('click', () => {
+            closePanel();
+        });
+
+        ipcRenderer.on('dd-init', (_, data) => {
+            const badge = data.source || 'analysis';
+            document.getElementById('header-badge').textContent = badge;
+            document.getElementById('loading-prompt').textContent =
+                data.prompt
+                    ? (data.prompt.length > 160 ? data.prompt.slice(0, 160) + '…' : data.prompt)
+                    : 'Analysing…';
+            setStatus('Thinking…');
+            setProgress(10);
+        });
+
+        ipcRenderer.on('dd-progress', (_, ev) => {
+            setProgress(Math.min(ev.pct || 50, 98));
+            setStatus(ev.status || 'Thinking…');
+        });
+
+        ipcRenderer.on('dd-ready', (_, data) => {
+            if (twTimer) cancelAnimationFrame(twTimer);
+            document.getElementById('cancel-bar').style.display = 'none';
+
+            fullText = data.text || '';
+            setProgress(100, true);
+            setStatus('Done ✓', true);
+
+            const elapsed = ((Date.now() - startMs) / 1000).toFixed(1);
+            document.getElementById('footer-meta').textContent = `deep dive · ${elapsed}s`;
+
+            const content = document.getElementById('content');
+            document.getElementById('loading-state').style.display = 'none';
+            typewrite(renderMd(fullText), content, 10);
+            document.getElementById('footer').style.display = 'flex';
+        });
+
+        ipcRenderer.on('dd-error', (_, msg) => {
+            if (twTimer) cancelAnimationFrame(twTimer);
+            document.getElementById('cancel-bar').style.display = 'none';
+            setStatus('Error', true);
+            setProgress(100, true);
+            document.getElementById('progress-bar').style.background = '#f85149';
+            document.getElementById('loading-state').innerHTML =
+                `<div class="error-state"><div style="font-size:20px;margin-bottom:6px">⚠️</div>
+                <div style="font-weight:600;color:#f85149;margin-bottom:4px">Analysis failed</div>
+                <div class="err-msg">${escHtml(msg)}</div></div>`;
+        });
+
+        // ── Close / ESC ───────────────────────────────
+        function closePanel() {
+            document.getElementById('panel').classList.add('closing');
+            setTimeout(() => ipcRenderer.send('deep-dive-close'), 190);
+        }
+
+        document.getElementById('close-btn').addEventListener('click', closePanel);
+        document.getElementById('btn-close')?.addEventListener('click', closePanel);
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+
+        // ── Cancel ────────────────────────────────────
+        document.getElementById('btn-cancel').addEventListener('click', () => {
+            ipcRenderer.send('deep-dive-cancel');
+            closePanel();
+        });
+
+        // ── Copy ──────────────────────────────────────
+        document.getElementById('btn-copy').addEventListener('click', () => {
+            const { clipboard } = require('electron');
+            clipboard.writeText(fullText);
+            const btn = document.getElementById('btn-copy');
+            btn.textContent = '✓ Copied';
+            btn.classList.add('success');
+            setTimeout(() => { btn.textContent = '📋 Copy'; btn.classList.remove('success'); }, 2000);
+        });
+
+        // ── Close panel IPC (cascade close) ───────────────────────
+        ipcRenderer.on('close-panel', () => {
+            const panel = document.querySelector('.panel');
+            if (panel) {
+                panel.classList.add('closing');
+                setTimeout(() => window.close(), 190);
+            } else {
+                window.close();
+            }
+        });
+
+        // ── Connector pulse on data arrival ─────────────────────
+        ipcRenderer.on('dd-ready', () => {
+            const conn = document.querySelector('.connector');
+            if (conn) {
+                conn.classList.remove('pulse');
+                void conn.offsetWidth;
+                conn.classList.add('pulse');
+                setTimeout(() => conn.classList.remove('pulse'), 450);
+            }
+        });
+    </script>
+</body>
+
+</html>

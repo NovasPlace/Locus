@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+linux-unpacked/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Config with potential secrets
+.env
+
+# Builder debug
+builder-debug.yml
+builder-effective-config.yaml
+
+# Python venv (setup creates this at ~/.local/share/locus/venv)
+__pycache__/
+*.pyc

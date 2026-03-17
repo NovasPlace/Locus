@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Locus Terminal</title>
+    <style>
+        :root {
+            --navy: #0d1117;
+            --navy-card: rgba(22, 27, 40, 0.95);
+            --border: rgba(255, 255, 255, 0.06);
+            --amber: #f5a623;
+            --amber-glow: rgba(245, 166, 35, 0.35);
+            --green: #3fb950;
+            --green-glow: rgba(63, 185, 80, 0.35);
+            --red: #f85149;
+            --text: rgba(255, 255, 255, 0.85);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--navy);
+            color: var(--text);
+            font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+            font-size: 11px;
+            overflow: hidden;
+        }
+
+        /* ── Right connector (connects to mainWindow to the right) ── */
+        .connector-right {
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: 3px;
+            height: 100%;
+            background: linear-gradient(180deg,
+                    transparent 0%,
+                    var(--amber-glow) 15%,
+                    var(--amber) 50%,
+                    var(--amber-glow) 85%,
+                    transparent 100%);
+            box-shadow: 0 0 12px var(--amber-glow);
+            z-index: 10;
+            animation: connectorFlare 500ms ease-out;
+        }
+
+        @keyframes connectorFlare {
+            0%   { box-shadow: 0 0 6px var(--amber-glow); width: 3px; }
+            30%  { box-shadow: 0 0 20px var(--amber), 0 0 40px var(--amber-glow); width: 5px; }
+            100% { box-shadow: 0 0 12px var(--amber-glow); width: 3px; }
+        }
+
+        @keyframes connectorPulse {
+            0% {
+                box-shadow: 0 0 12px var(--amber-glow);
+            }
+
+            50% {
+                box-shadow: 0 0 28px var(--amber), 0 0 48px var(--amber-glow);
+            }
+
+            100% {
+                box-shadow: 0 0 12px var(--amber-glow);
+            }
+        }
+
+        .connector-right.pulse {
+            animation: connectorPulse 400ms ease-out;
+        }
+
+        /* ── Unfold from right edge (swings left, away from main window) ── */
+        @keyframes unfoldRight {
+            0% {
+                transform: perspective(1200px) rotateY(92deg) scaleX(0.3);
+                opacity: 0;
+                box-shadow: 8px 0 20px rgba(0, 0, 0, 0.6);
+            }
+            40% {
+                transform: perspective(1200px) rotateY(30deg) scaleX(0.85);
+                opacity: 0.7;
+                box-shadow: 4px 0 16px rgba(0, 0, 0, 0.3);
+            }
+            75% {
+                transform: perspective(1200px) rotateY(-3deg) scaleX(1.01);
+                opacity: 1;
+                box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+            }
+            100% {
+                transform: perspective(1200px) rotateY(0deg) scaleX(1);
+                opacity: 1;
+                box-shadow: none;
+            }
+        }
+
+        @keyframes foldRight {
+            0% {
+                transform: perspective(1200px) rotateY(0deg) scaleX(1);
+                opacity: 1;
+                box-shadow: none;
+            }
+            60% {
+                transform: perspective(1200px) rotateY(50deg) scaleX(0.6);
+                opacity: 0.5;
+                box-shadow: 6px 0 18px rgba(0, 0, 0, 0.4);
+            }
+            100% {
+                transform: perspective(1200px) rotateY(92deg) scaleX(0.2);
+                opacity: 0;
+                box-shadow: 8px 0 24px rgba(0, 0, 0, 0.6);
+            }
+        }
+
+        .panel {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            transform-origin: right center;
+            animation: unfoldRight 380ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            z-index: 1;
+        }
+
+        .panel.closing {
+            animation: foldRight 260ms cubic-bezier(0.55, 0, 0.55, 0.2) forwards;
+        }
+
+        /* ── Dot grid bg ── */
+        .panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(circle, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 20px 20px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Header ── */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            position: relative;
+            z-index: 2;
+        }
+
+        .header .icon {
+            font-size: 13px;
+        }
+
+        .header .title {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--amber);
+            text-shadow: 0 0 8px var(--amber-glow);
+        }
+
+        .header .badge {
+            font-size: 8px;
+            padding: 2px 6px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .header .badge.running {
+            border-color: rgba(63, 185, 80, 0.4);
+            color: var(--green);
+        }
+
+        .header .badge.error {
+            border-color: rgba(248, 81, 73, 0.4);
+            color: var(--red);
+        }
+
+        .header .spacer {
+            flex: 1;
+        }
+
+        .close-btn {
+            background: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.35);
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .close-btn:hover {
+            background: rgba(248, 81, 73, 0.15);
+            border-color: rgba(248, 81, 73, 0.4);
+            color: var(--red);
+        }
+
+        /* ── Output area ── */
+        .output {
+            flex: 1;
+            overflow-y: auto;
+            padding: 6px 12px;
+            font-size: 11px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-all;
+            position: relative;
+            z-index: 1;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+        }
+
+        .output::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .output::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+
+        .output .stdout {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .output .stderr {
+            color: var(--red);
+            opacity: 0.9;
+        }
+
+        .output .exit-msg {
+            color: var(--amber);
+            opacity: 0.6;
+            font-style: italic;
+            margin-top: 4px;
+        }
+
+        .output .prompt-marker {
+            color: var(--green);
+            opacity: 0.7;
+        }
+
+        /* ── Input row ── */
+        .input-row {
+            display: flex;
+            gap: 6px;
+            padding: 6px 12px 8px;
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+            position: relative;
+            z-index: 2;
+        }
+
+        .input-row input {
+            flex: 1;
+            padding: 5px 8px;
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 11px;
+            outline: none;
+        }
+
+        .input-row input:focus {
+            border-color: var(--amber);
+            box-shadow: 0 0 6px var(--amber-glow);
+        }
+
+        .input-row button {
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--amber);
+            font-family: inherit;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .input-row button:hover {
+            background: rgba(245, 166, 35, 0.12);
+            border-color: rgba(245, 166, 35, 0.4);
+            box-shadow: 0 0 6px var(--amber-glow);
+        }
+
+        .input-row .kill-btn {
+            color: var(--red);
+            border-color: rgba(248, 81, 73, 0.2);
+        }
+
+        .input-row .kill-btn:hover {
+            background: rgba(248, 81, 73, 0.12);
+            border-color: rgba(248, 81, 73, 0.4);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="connector-right"></div>
+    <div class="panel">
+        <div class="header">
+            <span class="icon">⌘</span>
+            <span class="title">Terminal</span>
+            <span class="badge" id="badge">idle</span>
+            <div class="spacer"></div>
+            <button class="close-btn" id="btn-close" title="Close">✕</button>
+        </div>
+        <div class="output" id="output">
+            <span class="prompt-marker">locus ~ $</span>
+        </div>
+        <div class="input-row">
+            <input type="text" id="cmd-input" placeholder="Enter command…" />
+            <button id="btn-run">▶ Run</button>
+            <button id="btn-kill" class="kill-btn" style="display:none">■ Kill</button>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        const output = document.getElementById('output');
+        const cmdInput = document.getElementById('cmd-input');
+        const btnRun = document.getElementById('btn-run');
+        const btnKill = document.getElementById('btn-kill');
+        const badge = document.getElementById('badge');
+        let running = false;
+
+        function appendOutput(text, cls) {
+            const span = document.createElement('span');
+            span.className = cls;
+            span.textContent = text;
+            output.appendChild(span);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function setRunning(state) {
+            running = state;
+            btnRun.style.display = state ? 'none' : '';
+            btnKill.style.display = state ? '' : 'none';
+            badge.textContent = state ? 'running' : 'idle';
+            badge.className = 'badge' + (state ? ' running' : '');
+        }
+
+        function pulseConnector() {
+            const el = document.querySelector('.connector-right');
+            if (!el) return;
+            el.classList.remove('pulse');
+            void el.offsetWidth;
+            el.classList.add('pulse');
+            setTimeout(() => el.classList.remove('pulse'), 450);
+        }
+
+        // ── Run command ──────────────────────────────────
+        function runCommand() {
+            const cmd = cmdInput.value.trim();
+            if (!cmd || running) return;
+            cmdInput.value = '';
+
+            appendOutput('\n', 'stdout');
+            appendOutput('locus ~ $ ' + cmd + '\n', 'prompt-marker');
+            pulseConnector();
+            setRunning(true);
+            ipcRenderer.send('terminal-exec', cmd);
+        }
+
+        btnRun.addEventListener('click', runCommand);
+        cmdInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') { e.preventDefault(); runCommand(); }
+            e.stopPropagation();
+        });
+        cmdInput.addEventListener('keyup', e => e.stopPropagation());
+
+        btnKill.addEventListener('click', () => {
+            ipcRenderer.send('terminal-kill');
+            appendOutput('\n^C (killed)\n', 'stderr');
+            setRunning(false);
+        });
+
+        // ── Output streams ──────────────────────────────
+        ipcRenderer.on('terminal-stdout', (_e, data) => {
+            appendOutput(data, 'stdout');
+        });
+
+        ipcRenderer.on('terminal-stderr', (_e, data) => {
+            appendOutput(data, 'stderr');
+        });
+
+        ipcRenderer.on('terminal-exit', (_e, code) => {
+            appendOutput(`\n[exit ${code}]\n`, 'exit-msg');
+            setRunning(false);
+        });
+
+        // ── Close ──────────────────────────────────────
+        document.getElementById('btn-close').addEventListener('click', () => {
+            ipcRenderer.send('terminal-kill');
+            const panel = document.querySelector('.panel');
+            panel.classList.add('closing');
+            setTimeout(() => window.close(), 220);
+        });
+
+        // ── Cascade close IPC ──────────────────────────
+        ipcRenderer.on('close-panel', () => {
+            ipcRenderer.send('terminal-kill');
+            const panel = document.querySelector('.panel');
+            panel.classList.add('closing');
+            setTimeout(() => window.close(), 190);
+        });
+    </script>
+</body>
+
+</html>

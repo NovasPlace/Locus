@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            cursor: crosshair;
+            background: transparent;
+            user-select: none;
+        }
+
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .hint {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            color: #d4d4d8;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 10;
+            border: 1px solid rgba(16, 163, 127, 0.4);
+        }
+
+        .hint span {
+            color: #10a37f;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="hint">
+        <span>Drag</span> to select region · <span>Esc</span> to cancel
+    </div>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Size canvas to screen
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let isDragging = false;
+        let startX = 0, startY = 0;
+        let endX = 0, endY = 0;
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (!isDragging) return;
+
+            const x = Math.min(startX, endX);
+            const y = Math.min(startY, endY);
+            const w = Math.abs(endX - startX);
+            const h = Math.abs(endY - startY);
+
+            if (w < 2 || h < 2) return;
+
+            // Dim everything outside the selection
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Clear the selection area (transparent hole)
+            ctx.clearRect(x, y, w, h);
+
+            // Draw selection border
+            ctx.strokeStyle = '#10a37f';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 3]);
+            ctx.strokeRect(x, y, w, h);
+
+            // Size label
+            ctx.setLineDash([]);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            const label = `${w} × ${h}`;
+            const labelW = ctx.measureText(label).width + 16;
+            ctx.fillRect(x + w - labelW, y + h + 4, labelW, 20);
+            ctx.fillStyle = '#10a37f';
+            ctx.font = '11px -apple-system, sans-serif';
+            ctx.fillText(label, x + w - labelW + 8, y + h + 17);
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            endX = e.clientX;
+            endY = e.clientY;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            endX = e.clientX;
+            endY = e.clientY;
+            draw();
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            isDragging = false;
+            const x = Math.min(startX, endX);
+            const y = Math.min(startY, endY);
+            const w = Math.abs(endX - startX);
+            const h = Math.abs(endY - startY);
+
+            if (w < 10 || h < 10) {
+                // Too small, treat as cancel
+                ipcRenderer.send('snip-cancel');
+                return;
+            }
+
+            ipcRenderer.send('snip-complete', { x, y, width: w, height: h });
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                ipcRenderer.send('snip-cancel');
+            }
+        });
+
+        // Right-click cancels
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            ipcRenderer.send('snip-cancel');
+        });
+    </script>
+</body>
+
+</html>

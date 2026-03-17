@@ -1,0 +1,2934 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Locus</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+        :root {
+            --bg:        #0d1117;
+            --bg2:       #161b22;
+            --bg3:       #1c2128;
+            --border:    rgba(48,54,61,0.8);
+            --accent:    #00d4aa;
+            --accent2:   rgba(0,212,170,0.12);
+            --text:      #e6edf3;
+            --text-dim:  #8b949e;
+            --text-dimmer: #484f58;
+            --green:     #3fb950;
+            --green-dim: rgba(63,185,80,0.15);
+            --red:       #f85149;
+            --blue:      #58a6ff;
+        }
+
+        * { margin:0; padding:0; box-sizing:border-box; }
+
+        @keyframes slideIn {
+            from { opacity:0; transform:translateY(6px) scale(0.98); }
+            to   { opacity:1; transform:none; }
+        }
+        body.animate-in { animation: slideIn 0.14s ease-out forwards; }
+
+        @keyframes wave {
+            0%,100% { transform:translateY(0); }
+            50%      { transform:translateY(-3px); }
+        }
+        .streaming-cursor { display:inline-flex; gap:3px; align-items:center; vertical-align:middle; margin-left:4px; }
+        .streaming-cursor span { width:4px; height:4px; border-radius:50%; background:var(--accent); animation:wave 0.9s ease-in-out infinite; }
+        .streaming-cursor span:nth-child(1) { animation-delay:0s; background:var(--accent); }
+        .streaming-cursor span:nth-child(2) { animation-delay:0.15s; background:var(--text-dim); }
+        .streaming-cursor::before { content:''; width:4px; height:4px; border-radius:50%; background:var(--green); animation:wave 0.9s ease-in-out infinite; animation-delay:0.3s; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 13px;
+            background: var(--bg);
+            color: var(--text);
+            border-radius: 12px;
+            border: 1px solid rgba(0,212,170,0.18);
+            box-shadow: 0 24px 64px rgba(0,0,0,0.72), 0 0 0 1px rgba(255,255,255,0.04);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ── Header ─────────────────────────────────── */
+        .header {
+            -webkit-app-region: drag;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 10px 12px 8px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg2);
+            border-radius: 12px 12px 0 0;
+            flex-shrink: 0;
+        }
+        .nav-btn {
+            -webkit-app-region: no-drag;
+            width: 22px; height: 22px;
+            display: flex; align-items:center; justify-content:center;
+            border-radius: 5px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-dim);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .nav-btn:hover { background:var(--bg3); color:var(--text); }
+        .hdr-sep { width:1px; height:14px; background:var(--border); margin:0 4px; }
+        .brand {
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--accent);
+            -webkit-app-region: drag;
+        }
+        .brand-spark { font-size:13px; color:var(--accent); -webkit-app-region: drag; }
+        .hdr-spacer { flex:1; }
+        .model-badge {
+            -webkit-app-region: no-drag;
+            font-size: 9px;
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--accent2);
+            color: var(--accent);
+            padding: 2px 7px;
+            border-radius: 4px;
+            border: 1px solid rgba(0,212,170,0.22);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .model-badge:hover { background: rgba(0,212,170,0.2); }
+        #lang-badge {
+            display:none;
+            background:rgba(88,166,255,0.12);
+            color:var(--blue);
+            border-color:rgba(88,166,255,0.2);
+        }
+        .memory-badge {
+            display:none;
+            font-size:9px;
+            background:rgba(234,179,8,0.12);
+            color:#eab308;
+            padding:2px 6px;
+            border-radius:4px;
+            border:1px solid rgba(234,179,8,0.2);
+        }
+        .token-badge { font-size:9px; color:var(--text-dimmer); font-variant-numeric:tabular-nums; }
+        .hdr-icon {
+            -webkit-app-region: no-drag;
+            width:22px; height:22px;
+            display:flex; align-items:center; justify-content:center;
+            border-radius:5px;
+            border:1px solid transparent;
+            background:transparent;
+            color:var(--text-dim);
+            font-size:11px;
+            cursor:pointer;
+            transition:all 0.15s;
+        }
+        .hdr-icon:hover { background:var(--bg3); border-color:var(--border); color:var(--text); }
+        .hdr-icon.pinned { color:var(--accent); border-color:rgba(0,212,170,0.3); background:var(--accent2); }
+        .source-file { font-size:9px; color:var(--text-dimmer); max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+        /* ── Context code block ──────────────────────── */
+        .ctx-section { flex-shrink:0; position:relative; }
+        .ctx-header {
+            display:flex; align-items:center; gap:6px;
+            padding:6px 12px 4px;
+        }
+        .ctx-label {
+            font-size:9px; font-weight:600;
+            letter-spacing:1.5px; text-transform:uppercase;
+            color:var(--text-dimmer);
+        }
+        .ctx-chars { font-size:9px; color:var(--text-dimmer); margin-left:auto; font-variant-numeric:tabular-nums; }
+        .ctx-push-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 9px;
+            border-radius: 5px;
+            border: 1px solid rgba(139,92,246,0.3);
+            background: rgba(139,92,246,0.1);
+            color: #a78bfa;
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.14s;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .ctx-push-btn:hover {
+            background: rgba(139,92,246,0.22);
+            border-color: rgba(139,92,246,0.5);
+            color: #c4b5fd;
+        }
+        .ctx-push-btn:active { transform: scale(0.96); }
+        .ctx-ctrl {
+            width:18px; height:18px;
+            border:none; background:transparent;
+            color:var(--text-dimmer); font-size:10px;
+            cursor:pointer; border-radius:3px;
+            display:flex; align-items:center; justify-content:center;
+            transition:all 0.12s;
+        }
+        .ctx-ctrl:hover { background:var(--bg3); color:var(--text); }
+        .ctx-toggle { font-size:8px; }
+        .context-box {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11.5px;
+            line-height: 1.55;
+            color: var(--green);
+            background: rgba(63,185,80,0.06);
+            border-top: 1px solid rgba(63,185,80,0.12);
+            border-bottom: 1px solid rgba(63,185,80,0.12);
+            padding: 10px 14px;
+            max-height: 110px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            cursor: text;
+            transition: max-height 0.2s;
+        }
+        .context-box.collapsed { max-height:0; padding:0 14px; overflow:hidden; }
+        .context-box.collapsed + .ctx-toggle { transform:rotate(-90deg); }
+        /* lang accent overrides */
+        .context-box.lang-text  { color:#79c0ff; background:rgba(88,166,255,0.06); border-color:rgba(88,166,255,0.12); }
+        .context-box.lang-other { color:#d2a8ff; background:rgba(210,168,255,0.06); border-color:rgba(210,168,255,0.12); }
+        /* scrollbar */
+        .context-box::-webkit-scrollbar { width:4px; }
+        .context-box::-webkit-scrollbar-track { background:transparent; }
+        .context-box::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+        /* ── Stack links ─────────────────────────────── */
+        .stack-links { display:none; flex-wrap:wrap; gap:4px; padding:4px 12px; }
+        .stack-link {
+            font-size:10px; padding:2px 7px;
+            background:rgba(248,81,73,0.1); border:1px solid rgba(248,81,73,0.25);
+            color:#f85149; border-radius:3px; cursor:pointer; transition:all 0.12s;
+        }
+        .stack-link:hover { background:rgba(248,81,73,0.22); }
+
+        /* ── Analysis header ────────────────────────── */
+        .analysis-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 14px 5px;
+            flex-shrink: 0;
+        }
+        .analysis-label {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: var(--accent);
+        }
+        .analysis-copy {
+            margin-left:auto;
+            width:20px; height:20px;
+            border:none; background:transparent;
+            color:var(--text-dim); font-size:11px;
+            cursor:pointer; border-radius:3px;
+            display:flex; align-items:center; justify-content:center;
+            transition:all 0.12s;
+        }
+        .analysis-copy:hover { background:var(--bg3); color:var(--text); }
+
+        /* Ollama offline banner */
+        #ollama-banner {
+            display:none;
+            background:rgba(248,81,73,0.1);
+            border:1px solid rgba(248,81,73,0.25);
+            color:var(--red);
+            font-size:10px; padding:4px 12px;
+            margin:0 10px 4px;
+            border-radius:6px; text-align:center;
+        }
+
+        /* ── Chat / response area ────────────────────── */
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 4px 0 0;
+        }
+        .chat-area::-webkit-scrollbar { width:4px; }
+        .chat-area::-webkit-scrollbar-track { background:transparent; }
+        .chat-area::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+        .empty-state {
+            padding: 28px 14px;
+            color: var(--text-dimmer);
+            font-size: 12px;
+            text-align: center;
+            font-style: italic;
+        }
+
+        .msg { padding:6px 14px 2px; }
+        .msg-user {
+            font-size:11px; color:var(--text-dimmer);
+            padding:3px 0 4px;
+            border-bottom:1px solid var(--border);
+            margin-bottom:4px;
+        }
+        .msg-user strong { color:var(--text-dim); }
+        .msg-assistant {
+            font-size:12.5px; line-height:1.65;
+            color:var(--text);
+        }
+        .msg-assistant h1,.msg-assistant h2,.msg-assistant h3 {
+            font-size:12px; font-weight:600; margin:8px 0 4px; color:var(--accent);
+        }
+        .msg-assistant pre {
+            background:var(--bg2); border:1px solid var(--border);
+            border-radius:6px; padding:8px 10px; margin:6px 0;
+            font-family:'JetBrains Mono',monospace; font-size:11px;
+            overflow-x:auto; color:var(--green);
+        }
+        .msg-assistant code {
+            font-family:'JetBrains Mono',monospace; font-size:11px;
+            background:var(--bg2); padding:1px 5px;
+            border-radius:3px; color:#79c0ff;
+        }
+        .msg-assistant pre code { background:none; padding:0; color:var(--green); }
+        .msg-assistant a { color:var(--blue); text-decoration:none; }
+        .msg-assistant .error { color:var(--red); }
+        .msg-toolbar {
+            display:flex; gap:4px; padding:4px 0 6px; flex-wrap:wrap;
+        }
+        .msg-toolbar button {
+            font-size:10px; padding:2px 8px;
+            background:var(--bg2); border:1px solid var(--border);
+            color:var(--text-dim); border-radius:4px; cursor:pointer;
+            transition:all 0.12s;
+        }
+        .msg-toolbar button:hover { background:var(--bg3); color:var(--text); border-color:rgba(139,148,158,0.4); }
+        .msg-toolbar button.success { color:var(--green); border-color:rgba(63,185,80,0.3); background:var(--green-dim); }
+        .msg-toolbar button.saved { color:var(--accent); }
+        .copy-btn {}
+        .chain-btn {}
+        .chain-menu {
+            display:none; flex-wrap:wrap; gap:3px;
+            padding:4px 0;
+        }
+        .chain-menu button { font-size:9px; padding:1px 6px; }
+
+        /* Diff view */
+        .diff-container { border:1px solid var(--border); border-radius:6px; overflow:hidden; margin:6px 0; font-family:'JetBrains Mono',monospace; font-size:11px; }
+        .diff-header { padding:3px 10px; background:var(--bg3); font-size:9px; color:var(--text-dim); }
+        .diff-line  { padding:0 10px; white-space:pre-wrap; }
+        .diff-add   { background:rgba(63,185,80,0.12); color:var(--green); }
+        .diff-del   { background:rgba(248,81,73,0.10); color:var(--red); text-decoration:line-through; }
+        .diff-ctx   { color:var(--text-dimmer); }
+        .diff-actions { display:flex; gap:6px; padding:5px 10px; border-top:1px solid var(--border); }
+        .diff-accept { background:rgba(63,185,80,0.15); border:1px solid rgba(63,185,80,0.3); color:var(--green); padding:2px 10px; border-radius:4px; cursor:pointer; font-size:10px; }
+        .diff-reject { background:rgba(248,81,73,0.1); border:1px solid rgba(248,81,73,0.25); color:var(--red); padding:2px 10px; border-radius:4px; cursor:pointer; font-size:10px; }
+
+        /* code-output */
+        .code-output { background:var(--bg2); border:1px solid var(--border); border-radius:6px; padding:7px 10px; margin:2px 14px; font-family:'JetBrains Mono',monospace; font-size:10px; white-space:pre-wrap; max-height:140px; overflow-y:auto; }
+        .code-output.error  { border-color:rgba(248,81,73,0.3);  color:var(--red); }
+        .code-output.success{ border-color:rgba(63,185,80,0.3);  color:#a7f3d0; }
+
+        /* compare */
+        .compare-container { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:6px 14px; }
+        .compare-panel { background:var(--bg2); border:1px solid var(--border); border-radius:6px; padding:8px; font-size:11px; overflow-y:auto; max-height:240px; }
+        .compare-panel .label { font-size:9px; color:var(--accent); font-weight:700; text-transform:uppercase; margin-bottom:3px; }
+
+        /* response ctx-menu */
+        .response-menu {
+            position:fixed;
+            background:rgba(22,27,34,0.98);
+            border:1px solid var(--border);
+            border-radius:8px;
+            padding:4px 0;
+            min-width:160px;
+            box-shadow:0 8px 24px rgba(0,0,0,0.5);
+            z-index:9999;
+            display:none;
+        }
+        .response-menu button { display:block; width:100%; text-align:left; background:none; border:none; color:#ccc; padding:6px 14px; font-size:11px; cursor:pointer; }
+        .response-menu button:hover { background:rgba(255,255,255,0.07); color:#fff; }
+
+        /* regex panel */
+        .regex-panel { padding:8px 10px; border:1px solid rgba(245,158,11,0.2); background:rgba(245,158,11,0.05); border-radius:6px; margin:6px 0; }
+        .regex-panel input { width:100%; background:rgba(0,0,0,0.3); border:1px solid var(--border); color:#fff; padding:5px 8px; border-radius:4px; font-size:12px; font-family:monospace; margin-bottom:6px; outline:none; }
+        .regex-panel input:focus { border-color:#f59e0b; }
+        .regex-result { font-size:12px; font-family:monospace; line-height:1.6; color:var(--text-dim); white-space:pre-wrap; max-height:110px; overflow-y:auto; }
+        .regex-match { background:rgba(245,158,11,0.3); color:#fbbf24; border-radius:2px; padding:0 1px; }
+        .regex-error { color:var(--red); font-size:11px; }
+
+        /* clip queue */
+        .clip-queue { padding:4px 0; }
+        .clip-queue-item { display:flex; align-items:center; gap:6px; padding:3px 8px; border-bottom:1px solid rgba(255,255,255,0.04); font-size:11px; color:var(--text-dim); }
+        .clip-queue-item .preview { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .clip-queue-item button { font-size:9px; padding:1px 5px; background:rgba(248,81,73,0.1); border:1px solid rgba(248,81,73,0.2); color:var(--red); border-radius:3px; cursor:pointer; }
+
+        /* ── Action dock (icon row) ───────────────────── */
+        .action-dock {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            padding: 5px 10px 4px;
+            border-top: 1px solid var(--border);
+            background: var(--bg2);
+            flex-shrink: 0;
+        }
+        .dock-btn {
+            display: flex; align-items:center; justify-content:center;
+            width: 34px; height: 30px;
+            border-radius: 7px;
+            border: 1px solid transparent;
+            background: transparent;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.14s;
+            color: var(--text-dim);
+            position: relative;
+        }
+        .dock-btn:hover {
+            background: var(--bg3);
+            border-color: var(--border);
+            color: var(--text);
+        }
+        .dock-btn.active {
+            background: var(--accent2);
+            border-color: rgba(0,212,170,0.3);
+            color: var(--accent);
+        }
+        .dock-btn[data-action="fix"]:hover         { color:#f85149; border-color:rgba(248,81,73,0.25); background:rgba(248,81,73,0.08); }
+        .dock-btn[data-action="optimize"]:hover    { color:#f0883e; border-color:rgba(240,136,62,0.25); background:rgba(240,136,62,0.08); }
+        .dock-btn[data-action="explain"]:hover     { color:#eab308; border-color:rgba(234,179,8,0.25); background:rgba(234,179,8,0.08); }
+        .dock-btn[data-action="document"]:hover    { color:#79c0ff; border-color:rgba(121,192,255,0.25); background:rgba(121,192,255,0.08); }
+        .dock-btn[data-action="review"]:hover      { color:#d2a8ff; border-color:rgba(210,168,255,0.25); background:rgba(210,168,255,0.08); }
+        .dock-sep { width:1px; height:18px; background:var(--border); margin:0 3px; }
+        .dock-btn-companion {
+            display:flex; align-items:center; gap:4px;
+            padding:0 10px; height:30px;
+            border-radius:7px;
+            border:1px solid rgba(0,212,170,0.25);
+            background:var(--accent2);
+            color:var(--accent);
+            font-size:11px; font-weight:600;
+            cursor:pointer; transition:all 0.14s;
+            margin-left:auto;
+        }
+        .dock-btn-companion:hover { background:rgba(0,212,170,0.2); border-color:rgba(0,212,170,0.4); }
+        .dock-btn-companion.active { background:rgba(0,212,170,0.25); box-shadow:0 0 10px rgba(0,212,170,0.15); }
+        .dock-push {
+            display:flex; align-items:center; justify-content:center;
+            width:28px; height:30px;
+            border-radius:7px;
+            border:1px solid rgba(139,92,246,0.25);
+            background:rgba(139,92,246,0.08);
+            color:#a78bfa;
+            font-size:13px;
+            cursor:pointer; transition:all 0.14s;
+        }
+        .dock-push:hover { background:rgba(139,92,246,0.18); border-color:rgba(139,92,246,0.4); }
+
+        /* ── Input bar ───────────────────────────────── */
+        .input-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 10px 10px;
+            border-top: 1px solid var(--border);
+            background: var(--bg2);
+            border-radius: 0 0 12px 12px;
+            flex-shrink: 0;
+        }
+        #cmd {
+            flex: 1;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 12.5px;
+            font-family: 'Inter', sans-serif;
+            padding: 7px 12px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        #cmd::placeholder { color: var(--text-dimmer); }
+        #cmd:focus { border-color: rgba(0,212,170,0.4); box-shadow:0 0 0 2px rgba(0,212,170,0.08); }
+        .send-btn {
+            width:34px; height:34px;
+            border-radius:8px;
+            border:1px solid rgba(0,212,170,0.3);
+            background:var(--accent2);
+            color:var(--accent);
+            font-size:16px;
+            cursor:pointer;
+            display:flex; align-items:center; justify-content:center;
+            transition:all 0.14s;
+            flex-shrink:0;
+        }
+        .send-btn:hover { background:rgba(0,212,170,0.22); border-color:var(--accent); }
+        .new-btn {
+            width:28px; height:28px;
+            border-radius:7px;
+            border:1px solid var(--border);
+            background:transparent;
+            color:var(--text-dim);
+            font-size:13px;
+            cursor:pointer;
+            display:flex; align-items:center; justify-content:center;
+            transition:all 0.14s;
+            flex-shrink:0;
+        }
+        .new-btn:hover { background:var(--bg3); color:var(--text); }
+
+        /* ── Hidden elements kept for JS compatibility ── */
+        .action-tabs     { display:none !important; }
+        .actions         { display:none !important; }
+        .panel-dock      { display:none !important; }
+        #btn-blueprint   { display:none !important; }
+        #btn-teach       { display:none !important; }
+        .btn-group       { display:none !important; }
+        .drag-bar        { display:none !important; }
+        .context-wrap    { display:none !important; }
+        .tool-sep        { display:none !important; }
+
+
+        /* #6: Smooth show/hide animation */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px) scale(0.98);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        body.animate-in {
+            animation: slideIn 0.15s ease-out forwards;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: rgba(14, 14, 16, 0.96);
+            color: #e4e4e7;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .drag-bar {
+            -webkit-app-region: drag;
+            padding: 8px 12px 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .title {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #10a37f;
+            font-weight: 700;
+        }
+
+        .model-badge {
+            font-size: 9px;
+            background: rgba(16, 163, 127, 0.15);
+            color: #10a37f;
+            padding: 2px 6px;
+            border-radius: 3px;
+            border: 1px solid rgba(16, 163, 127, 0.2);
+            letter-spacing: 0.3px;
+        }
+
+        .memory-badge {
+            font-size: 9px;
+            background: rgba(234, 179, 8, 0.15);
+            color: #eab308;
+            padding: 2px 6px;
+            border-radius: 3px;
+            border: 1px solid rgba(234, 179, 8, 0.2);
+            display: none;
+        }
+
+        /* v3.6: Token counter */
+        .token-badge {
+            font-size: 8px;
+            color: #666;
+            padding: 2px 4px;
+            letter-spacing: 0.3px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* v3.6: Response context menu */
+        .response-menu {
+            position: fixed;
+            background: rgba(24, 24, 28, 0.98);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            padding: 4px 0;
+            min-width: 160px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            display: none;
+        }
+
+        .response-menu button {
+            display: block;
+            width: 100%;
+            text-align: left;
+            background: none;
+            border: none;
+            color: #ccc;
+            padding: 6px 14px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .response-menu button:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+
+        /* v3.6: Compare view */
+        .compare-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            padding: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .compare-panel {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            padding: 8px;
+            font-size: 11px;
+            overflow-y: auto;
+            max-height: 280px;
+        }
+
+        .compare-panel .label {
+            font-size: 9px;
+            color: #10a37f;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        /* v3.6: Code run output */
+        .code-output {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            padding: 6px 8px;
+            margin: 4px 8px;
+            font-family: monospace;
+            font-size: 10px;
+            white-space: pre-wrap;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .code-output.error {
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+
+        .code-output.success {
+            border-color: rgba(16, 163, 127, 0.3);
+            color: #a7f3d0;
+        }
+
+        .pin-btn {
+            -webkit-app-region: no-drag;
+            font-size: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #666;
+            cursor: pointer;
+            padding: 2px 8px;
+            border-radius: 3px;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+
+        .pin-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #aaa;
+        }
+
+        .pin-btn.pinned {
+            background: rgba(16, 163, 127, 0.25);
+            border-color: #10a37f;
+            color: #10a37f;
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        .hint {
+            font-size: 9px;
+            color: #555;
+            letter-spacing: 0.5px;
+        }
+
+        /* Compact mode — hides context + tabs */
+        .compact-btn {
+            -webkit-app-region: no-drag;
+            font-size: 10px;
+            background: none;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #444;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 3px;
+            transition: all 0.15s;
+            line-height: 1;
+        }
+
+        .compact-btn:hover {
+            color: #888;
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .compact-btn.active {
+            color: #10a37f;
+            border-color: rgba(16, 163, 127, 0.35);
+        }
+
+        body.compact .context-wrap,
+        body.compact .action-tabs,
+        body.compact .actions,
+        body.compact .panel-dock {
+            display: none !important;
+        }
+
+        body.compact .chat-area {
+            padding-top: 4px;
+        }
+
+        /* Panel toggle active state */
+        .panel-toggle.active {
+            font-weight: 700;
+            box-shadow: 0 0 8px currentColor;
+            background: rgba(255, 255, 255, 0.06) !important;
+        }
+
+        /* ── Panel dock — always-visible panel toggle bar ── */
+        .panel-dock {
+            display: flex;
+            gap: 3px;
+            padding: 4px 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            -webkit-app-region: no-drag;
+        }
+
+        .panel-dock button {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 4px 0;
+            font-size: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.15s;
+            text-align: center;
+        }
+
+        .panel-dock button:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .panel-dock button:active {
+            transform: scale(0.97);
+        }
+
+        /* Tools tab separator */
+        .tool-sep {
+            width: 1px;
+            background: rgba(255, 255, 255, 0.08);
+            margin: 2px 4px;
+            flex-shrink: 0;
+        }
+
+
+        .context-wrap {
+            position: relative;
+            margin: 0 10px;
+        }
+
+        .context-header {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 2px;
+        }
+
+        .ctx-toggle {
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 10px;
+            cursor: pointer;
+            padding: 0 2px;
+            transition: transform 0.15s;
+        }
+
+        .ctx-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .ctx-label {
+            font-size: 9px;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .ctx-chars {
+            font-size: 9px;
+            color: #444;
+            margin-left: auto;
+        }
+
+        .context-box {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 8px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            color: #a1a1aa;
+            max-height: 70px;
+            overflow-y: auto;
+            border-left: 3px solid #10a37f;
+            white-space: pre-wrap;
+            word-break: break-word;
+            -webkit-app-region: no-drag;
+            transition: max-height 0.2s ease, padding 0.2s ease, opacity 0.2s ease,
+                border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        /* Language-aware accent colors */
+        .context-box.lang-code {
+            border-color: #06b6d4;
+            box-shadow: -2px 0 8px rgba(6, 182, 212, 0.12);
+        }
+
+        .context-box.lang-text {
+            border-color: #10a37f;
+            box-shadow: -2px 0 8px rgba(16, 163, 127, 0.12);
+        }
+
+        .context-box.lang-other {
+            border-color: rgba(139, 92, 246, 0.7);
+            box-shadow: -2px 0 8px rgba(139, 92, 246, 0.1);
+        }
+
+        .context-box.collapsed {
+            max-height: 0;
+            padding: 0 10px;
+            opacity: 0;
+            overflow: hidden;
+        }
+
+        /* #2: Screenshot button */
+        .screenshot-btn {
+            -webkit-app-region: no-drag;
+            font-size: 10px;
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            color: #8b5cf6;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+
+        .screenshot-btn:hover {
+            background: rgba(139, 92, 246, 0.3);
+        }
+
+        .ctx-ctrl {
+            -webkit-app-region: no-drag;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #a1a1aa;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 1px 7px;
+            margin-left: 4px;
+            border-radius: 4px;
+            font-weight: 600;
+            transition: all 0.15s;
+        }
+
+        .ctx-ctrl:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+        }
+
+        #ctx-keep:hover {
+            background: rgba(16, 163, 127, 0.2);
+            border-color: rgba(16, 163, 127, 0.4);
+            color: #10a37f;
+        }
+
+        #ctx-clear:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.4);
+            color: #ef4444;
+        }
+
+        .action-tabs {
+            display: flex;
+            gap: 4px;
+            padding: 4px 10px 0;
+            -webkit-app-region: no-drag;
+        }
+
+        .action-tabs .tab {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #666;
+            padding: 3px 12px;
+            font-size: 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            transition: all 0.15s;
+        }
+
+        .action-tabs .tab:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #999;
+        }
+
+        .action-tabs .tab.hidden-tab {
+            display: none;
+        }
+
+        .action-tabs .tab.active[data-tab="code"] {
+            background: rgba(16, 163, 127, 0.2);
+            border-color: rgba(16, 163, 127, 0.4);
+            color: #10a37f;
+        }
+
+        .action-tabs .tab.active[data-tab="text"] {
+            background: rgba(20, 184, 166, 0.2);
+            border-color: rgba(20, 184, 166, 0.4);
+            color: #14b8a6;
+        }
+
+        .action-tabs .tab.active[data-tab="tools"] {
+            background: rgba(139, 92, 246, 0.2);
+            border-color: rgba(139, 92, 246, 0.4);
+            color: #8b5cf6;
+        }
+
+        .actions {
+            display: flex;
+            gap: 4px;
+            padding: 6px 10px;
+            flex-wrap: wrap;
+            -webkit-app-region: no-drag;
+        }
+
+        .actions button {
+            background: rgba(16, 163, 127, 0.15);
+            border: 1px solid rgba(16, 163, 127, 0.3);
+            color: #10a37f;
+            padding: 4px 10px;
+            font-size: 11px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.15s;
+        }
+
+        .actions button:hover {
+            background: rgba(16, 163, 127, 0.3);
+            border-color: #10a37f;
+            transform: scale(1.04);
+            box-shadow: 0 0 8px rgba(16, 163, 127, 0.25);
+        }
+
+        .actions button:active {
+            transform: scale(0.97);
+        }
+
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 12px;
+            font-size: 13px;
+            line-height: 1.6;
+            -webkit-app-region: no-drag;
+            scrollbar-width: thin;
+            scrollbar-color: #333 transparent;
+        }
+
+        .msg {
+            margin-bottom: 10px;
+        }
+
+        .msg-user {
+            color: #888;
+            font-size: 11px;
+            margin-bottom: 2px;
+        }
+
+        .msg-user strong {
+            color: #10a37f;
+        }
+
+        .msg-assistant {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 8px 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .msg-assistant pre {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 5px;
+            padding: 10px;
+            margin: 6px 0;
+            overflow-x: auto;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .msg-assistant pre code {
+            background: none;
+            padding: 0;
+            border: none;
+            font-size: 12px;
+            color: #e4e4e7;
+        }
+
+        .msg-assistant code {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: 12px;
+            color: #10a37f;
+        }
+
+        .msg-assistant h1,
+        .msg-assistant h2,
+        .msg-assistant h3 {
+            margin: 8px 0 4px;
+            color: #e4e4e7;
+            font-size: 14px;
+        }
+
+        .msg-assistant h1 {
+            font-size: 16px;
+        }
+
+        .msg-assistant ul,
+        .msg-assistant ol {
+            padding-left: 18px;
+            margin: 4px 0;
+        }
+
+        .msg-assistant li {
+            margin: 2px 0;
+        }
+
+        .msg-assistant blockquote {
+            border-left: 2px solid #10a37f;
+            padding-left: 10px;
+            margin: 6px 0;
+            color: #a1a1aa;
+        }
+
+        .msg-assistant a {
+            color: #10a37f;
+            text-decoration: none;
+        }
+
+        .msg-assistant table {
+            border-collapse: collapse;
+            margin: 6px 0;
+            font-size: 12px;
+        }
+
+        .msg-assistant th,
+        .msg-assistant td {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 4px 8px;
+        }
+
+        .msg-assistant th {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .msg-assistant p {
+            margin: 4px 0;
+        }
+
+        .msg-toolbar {
+            display: flex;
+            gap: 4px;
+            margin-top: 4px;
+        }
+
+        .msg-toolbar button {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #888;
+            padding: 2px 8px;
+            font-size: 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .msg-toolbar button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e4e4e7;
+        }
+
+        .msg-toolbar button.success {
+            color: #10a37f;
+            border-color: rgba(16, 163, 127, 0.3);
+        }
+
+        .msg-toolbar button.saved {
+            color: #eab308;
+            border-color: rgba(234, 179, 8, 0.3);
+        }
+
+        .chain-btn {
+            color: #eab308 !important;
+            border-color: rgba(234, 179, 8, 0.25) !important;
+        }
+
+        .chain-menu {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            padding-top: 4px;
+            width: 100%;
+        }
+
+        .chain-menu button {
+            font-size: 10px;
+            padding: 2px 7px;
+            background: rgba(234, 179, 8, 0.1);
+            border: 1px dashed rgba(234, 179, 8, 0.3);
+            color: #eab308;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .chain-menu button:hover {
+            background: rgba(234, 179, 8, 0.25) !important;
+            color: #fbbf24 !important;
+        }
+
+        /* Streaming wave dots — replaces blink cursor */
+        .streaming-cursor {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            vertical-align: middle;
+            margin-left: 4px;
+            height: 14px;
+        }
+
+        .streaming-cursor::before,
+        .streaming-cursor::after,
+        .streaming-cursor span {
+            content: '';
+            display: inline-block;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #10a37f;
+            animation: waveDot 1.2s ease-in-out infinite;
+        }
+
+        .streaming-cursor::before {
+            animation-delay: 0s;
+        }
+
+        .streaming-cursor span {
+            animation-delay: 0.2s;
+        }
+
+        .streaming-cursor::after {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes waveDot {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0.6);
+                opacity: 0.35;
+            }
+
+            40% {
+                transform: scale(1.1);
+                opacity: 1;
+            }
+        }
+
+        .input-bar {
+            display: flex;
+            padding: 8px 10px 10px;
+            gap: 6px;
+            -webkit-app-region: no-drag;
+        }
+
+        .input-bar input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            outline: none;
+            font-size: 13px;
+        }
+
+        .input-bar input:focus {
+            border-color: #10a37f;
+            box-shadow: 0 0 0 1px rgba(16, 163, 127, 0.3);
+        }
+
+        .input-bar input::placeholder {
+            color: #555;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 3px;
+        }
+
+        .send-btn,
+        .new-btn {
+            background: #10a37f;
+            border: none;
+            color: #fff;
+            width: 34px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s;
+        }
+
+        .send-btn:hover {
+            background: #0d8c6d;
+        }
+
+        .new-btn {
+            background: rgba(255, 255, 255, 0.08);
+            color: #888;
+            font-size: 12px;
+        }
+
+        .new-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #e4e4e7;
+        }
+
+        .error {
+            color: #ef4444;
+            font-style: italic;
+        }
+
+        .empty-state {
+            color: #555;
+            font-style: italic;
+            text-align: center;
+            padding: 20px 0;
+            font-size: 12px;
+        }
+
+        /* #3: Diff view for code responses */
+        .diff-container {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            margin: 6px 0;
+            overflow: hidden;
+            font-family: monospace;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .diff-header {
+            padding: 4px 10px;
+            background: rgba(255, 255, 255, 0.04);
+            font-size: 10px;
+            color: #666;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .diff-line {
+            padding: 0 10px;
+            white-space: pre-wrap;
+        }
+
+        .diff-add {
+            background: rgba(16, 185, 129, 0.12);
+            color: #10b981;
+        }
+
+        .diff-del {
+            background: rgba(239, 68, 68, 0.12);
+            color: #ef4444;
+            text-decoration: line-through;
+        }
+
+        .diff-ctx {
+            color: #71717a;
+        }
+
+        .diff-actions {
+            display: flex;
+            gap: 6px;
+            padding: 6px 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .diff-accept {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #10b981;
+            padding: 3px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .diff-reject {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+            padding: 3px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        /* Feature 4: Stack trace links */
+        .stack-links {
+            display: none;
+            padding: 4px 10px;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .stack-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 10px;
+            padding: 2px 6px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            color: #f87171;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.12s;
+        }
+
+        .stack-link:hover {
+            background: rgba(239, 68, 68, 0.25);
+            color: #fca5a5;
+        }
+
+        /* Feature 5: Source file indicator */
+        .source-file {
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.25);
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Feature 6: Regex live tester */
+        .regex-panel {
+            padding: 8px 10px;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            background: rgba(245, 158, 11, 0.05);
+            border-radius: 6px;
+            margin: 6px 0;
+        }
+
+        .regex-panel input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 6px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: monospace;
+            margin-bottom: 6px;
+            outline: none;
+        }
+
+        .regex-panel input:focus {
+            border-color: #f59e0b;
+        }
+
+        .regex-result {
+            font-size: 12px;
+            font-family: monospace;
+            line-height: 1.6;
+            color: #a1a1aa;
+            white-space: pre-wrap;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .regex-match {
+            background: rgba(245, 158, 11, 0.3);
+            color: #fbbf24;
+            border-radius: 2px;
+            padding: 0 1px;
+        }
+
+        .regex-error {
+            color: #ef4444;
+            font-size: 11px;
+        }
+
+        /* Feature 7: Clipboard queue */
+        .clip-queue {
+            padding: 4px 0;
+        }
+
+        .clip-queue-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            font-size: 11px;
+            color: #a1a1aa;
+        }
+
+        .clip-queue-item .preview {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .clip-queue-item button {
+            font-size: 9px;
+            padding: 1px 5px;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            color: #ef4444;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+
+        /* Mode badge in drag bar */
+        .mode-badge {
+            font-size: 9px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            border: 1px solid rgba(16, 163, 127, 0.3);
+            background: rgba(16, 163, 127, 0.1);
+            color: #10a37f;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            transition: all 0.2s;
+            -webkit-app-region: no-drag;
+        }
+
+        .mode-badge.teach {
+            border-color: rgba(20, 184, 166, 0.35);
+            background: rgba(20, 184, 166, 0.1);
+            color: #14b8a6;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ── Header ───────────────────────────────────── -->
+    <div class="header">
+        <button class="nav-btn" onclick="history.back()" title="Back">&#8592;</button>
+        <button class="nav-btn" onclick="history.forward()" title="Forward">&#8594;</button>
+        <div class="hdr-sep"></div>
+        <span class="brand">LOCUS AI</span>
+        <span class="brand-spark">&#9889;</span>
+        <span class="memory-badge" id="memory-badge">&#x1F9E0; 0</span>
+        <div class="hdr-spacer"></div>
+        <span class="model-badge" id="model-badge" title="Click to switch provider">llama3.2</span>
+        <span id="lang-badge" class="model-badge"></span>
+        <span class="token-badge" id="token-badge">0 tok</span>
+        <button class="hdr-icon" id="screenshot-btn" title="Capture screenshot">&#x1F4F7;</button>
+        <button class="hdr-icon pin-btn" id="pin-btn" title="Pin overlay">&#x1F4CC;</button>
+        <button class="hdr-icon" id="compact-btn" title="Toggle compact">&#x2261;</button>
+        <span class="source-file" id="source-file" title=""></span>
+    </div>
+
+    <!-- ── Context code block ───────────────────────── -->
+    <div class="ctx-section">
+        <div class="ctx-header">
+            <button class="ctx-ctrl ctx-toggle" id="ctx-toggle" title="Toggle">&#9660;</button>
+            <span class="ctx-label">Context</span>
+            <span class="ctx-chars" id="ctx-chars"></span>
+            <button class="ctx-push-btn" id="ctx-push-panel" title="Send context to companion panel">&#8594; Panel</button>
+            <button class="ctx-ctrl" id="ctx-keep" title="Push to chat">&#8595;</button>
+            <button class="ctx-ctrl" id="ctx-clear" title="Clear">&times;</button>
+        </div>
+        <div class="context-box" id="context-box"><i style="color:var(--text-dimmer)">Highlight code anywhere&#8230;</i></div>
+    </div>
+
+    <!-- Stack trace links -->
+    <div class="stack-links" id="stack-links"></div>
+
+    <!-- Ollama offline -->
+    <div id="ollama-banner">&#9888; Ollama offline &#8212; AI features unavailable</div>
+
+    <!-- ── Analysis label ───────────────────────────── -->
+    <div class="analysis-bar">
+        <span class="analysis-label">AI Analysis</span>
+        <button class="analysis-copy" id="ctx-copy-btn" title="Copy last response">&#10697;</button>
+        <button class="mode-badge" id="mode-badge" title="Switch mode" style="-webkit-app-region:no-drag;margin-left:4px">Blueprint</button>
+    </div>
+
+    <!-- ── Chat / streaming area ────────────────────── -->
+    <div class="chat-area" id="chat">
+        <div class="empty-state">Ready. Highlight &#8594; invoke &#8594; command.</div>
+    </div>
+
+    <!-- Hidden action panels (JS compatibility) -->
+    <div class="action-tabs">
+        <button class="tab active" data-tab="code">Code</button>
+        <button class="tab" data-tab="text">Text</button>
+        <button class="tab" data-tab="tools">Tools</button>
+    </div>
+    <div class="actions" id="actions-code">
+        <button data-action="fix">Fix</button><button data-action="optimize">Optimize</button>
+        <button data-action="review">Review</button><button data-action="test">Tests</button>
+        <button data-action="document">Docs</button>
+    </div>
+    <div class="actions" id="actions-text" style="display:none">
+        <button data-action="rewrite">Rewrite</button><button data-action="simplify">Simplify</button>
+        <button data-action="explain">Explain</button><button data-action="summarize">Summarize</button>
+        <button data-action="translate">Translate</button><button data-action="reply">Reply</button>
+        <button data-action="search">Search</button>
+    </div>
+    <div class="actions" id="actions-tools" style="display:none">
+        <button data-action="json">JSON</button><button data-action="regex">Regex</button>
+        <span class="tool-sep"></span>
+        <button id="clip-queue-add" title="Add to queue">&#x1F4CB; +Queue</button>
+        <button id="clip-queue-send" title="Send queue">&#x25B6; Send</button>
+        <button id="clip-queue-clear" title="Clear queue">&times;</button>
+        <span class="tool-sep"></span>
+        <button id="btn-git" onclick="ipcRenderer.send('get-git-context')">&#x1F4C1; Git</button>
+        <button id="btn-stats" onclick="ipcRenderer.send('get-stats')">&#x1F4CA; Stats</button>
+        <button id="btn-ocr" onclick="ipcRenderer.send('ocr-image', lastScreenshotPath||'')">&#x1F50D; OCR</button>
+    </div>
+    <!-- Hidden panel dock (JS compat) -->
+    <div class="panel-dock">
+        <button id="btn-toggle-companion">&#x26A1; Panels</button>
+        <button id="btn-push-context">&#8594; Panel</button>
+    </div>
+
+    <!-- ── Icon action dock ──────────────────────────── -->
+    <div class="action-dock" id="action-dock">
+        <button class="dock-btn" data-action="fix" title="Fix">&#x1F527;</button>
+        <button class="dock-btn" data-action="optimize" title="Optimize">&#x26A1;</button>
+        <button class="dock-btn" data-action="explain" title="Explain">&#x1F4A1;</button>
+        <button class="dock-btn" data-action="document" title="Teach / Docs">&#x1F4D6;</button>
+        <button class="dock-btn" data-action="review" title="Deep Review">&#x1F52C;</button>
+        <div class="dock-sep"></div>
+        <button class="dock-btn" data-action="rewrite" title="Rewrite">&#x270F;&#xFE0F;</button>
+        <button class="dock-btn" data-action="summarize" title="Summarize">&#x1F4CB;</button>
+        <div class="dock-sep"></div>
+        <button class="dock-push" id="btn-push-context-dock" title="Push context to panel">&#8594;</button>
+        <button class="dock-btn-companion" id="btn-toggle-companion-dock" title="Open Panels">&#x26A1; Panels</button>
+    </div>
+
+    <!-- ── Input bar ─────────────────────────────────── -->
+    <div class="input-bar">
+        <input type="text" id="cmd" placeholder="Ask Locus&#8230;" autocomplete="off" />
+        <button class="send-btn" id="send-btn" title="Send">&#8594;</button>
+        <button class="new-btn" id="new-btn" title="New conversation">+</button>
+        <button class="new-btn" id="export-btn" title="Export chat">&#x1F4C4;</button>
+    </div>
+
+
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        // Lightweight inline markdown renderer (no external deps)
+        function renderMarkdown(text) {
+            var codeBlocks = [];
+            var processed = text.replace(/```(\w*)\n([\s\S]*?)```/g, function (m, lang, code) {
+                var escaped = code.trim().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                var idx = codeBlocks.length;
+                codeBlocks.push('<pre><code>' + escaped + '</code></pre>');
+                return '\x00CB' + idx + '\x00';
+            });
+            processed = processed.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            processed = processed.replace(/`([^`]+)`/g, '<code>$1</code>');
+            processed = processed.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+            processed = processed.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+            processed = processed.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+            processed = processed.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            processed = processed.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            processed = processed.replace(/^[\-\*] (.+)$/gm, '<li>$1</li>');
+            processed = processed.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+            processed = processed.replace(/\[([^\]]+)\]\(([^)]+)\)/g, function (m, label, url) {
+                if (/^javascript:/i.test(url.trim())) return label;
+                return '<a href="' + url + '">' + label + '</a>';
+            });
+            processed = processed.replace(/\n/g, '<br>');
+            for (var i = 0; i < codeBlocks.length; i++) {
+                processed = processed.replace('\x00CB' + i + '\x00', codeBlocks[i]);
+            }
+            return processed;
+        }
+
+
+        const contextBox = document.getElementById('context-box');
+        const chatArea = document.getElementById('chat');
+        const cmdInput = document.getElementById('cmd');
+        const sendBtn = document.getElementById('send-btn');
+        const newBtn = document.getElementById('new-btn');
+        const memoryBadge = document.getElementById('memory-badge');
+        const pinBtn = document.getElementById('pin-btn');
+        const ctxToggle = document.getElementById('ctx-toggle');
+        const ctxChars = document.getElementById('ctx-chars');
+        const screenshotBtn = document.getElementById('screenshot-btn');
+
+        let currentContext = '';
+        let lastScreenshotPath = '';  // v3.6: track for OCR
+        let latestHighlight = '';
+        let selectionCount = 0;
+        let responseBuffer = '';
+        let isStreaming = false;
+        let messageHistory = [];
+        let ctxCollapsed = false;
+
+        // #9: Context toggle
+        ctxToggle.addEventListener('click', () => {
+            ctxCollapsed = !ctxCollapsed;
+            contextBox.classList.toggle('collapsed', ctxCollapsed);
+            ctxToggle.classList.toggle('collapsed', ctxCollapsed);
+        });
+
+        function updateCtxChars() {
+            if (currentContext) {
+                ctxChars.textContent = selectionCount + (selectionCount === 1 ? ' sel' : ' sels') + ' · ' + currentContext.length + ' chars';
+            } else {
+                ctxChars.textContent = '';
+            }
+        }
+
+        // #6: Trigger animation on overlay show
+        function triggerShowAnimation() {
+            document.body.classList.remove('animate-in');
+            void document.body.offsetWidth; // force reflow
+            document.body.classList.add('animate-in');
+        }
+
+        // #2: Screenshot capture
+        screenshotBtn.addEventListener('click', () => {
+            ipcRenderer.send('capture-screenshot');
+            screenshotBtn.textContent = '...';
+            screenshotBtn.disabled = true;
+        });
+        ipcRenderer.on('screenshot-captured', (event, info) => {
+            screenshotBtn.textContent = '📷';
+            screenshotBtn.disabled = false;
+            if (info && info.path) {
+                lastScreenshotPath = info.path;  // v3.6: track for OCR
+                currentContext = (currentContext ? currentContext + '\n---\n' : '') + `[Screenshot: ${info.path}]`;
+                contextBox.textContent = 'Screenshot captured ✓';
+                contextBox.style.color = '#8b5cf6';
+                updateCtxChars();
+            }
+        });
+
+        // Region capture — show thumbnail and set up for vision response
+        ipcRenderer.on('region-captured', (event, info) => {
+            contextBox.textContent = `📷 Region captured (${info.width}×${info.height})`;
+            contextBox.style.color = '#8b5cf6';
+            currentContext = `[Region Capture: ${info.path}]`;
+            latestHighlight = '';
+            selectionCount = 0;
+            messageHistory = [];
+            messageHistory.push({ role: 'user', content: '📷 Analyze captured region' });
+            chatArea.innerHTML = '<div class="msg"><div class="msg-user"><strong>You:</strong> 📷 Analyze captured region</div></div>';
+        });
+        ipcRenderer.on('screenshot-error', (event, err) => {
+            screenshotBtn.textContent = '📷';
+            screenshotBtn.disabled = false;
+            contextBox.textContent = 'Screenshot failed: ' + err;
+            contextBox.style.color = '#ef4444';
+        });
+
+        // Clipboard history display
+        ipcRenderer.on('clipboard-history', (event, entries) => {
+            contextBox.textContent = '📋 Clipboard History (' + entries.length + ' entries)';
+            contextBox.style.color = '#8b5cf6';
+            messageHistory = [];
+
+            let html = '<div style="padding:4px 0">';
+            entries.forEach((entry, idx) => {
+                const preview = entry.text.length > 60 ? entry.text.substring(0, 60) + '…' : entry.text;
+                const ago = Math.round((Date.now() - entry.time) / 1000);
+                const timeStr = ago < 60 ? ago + 's ago' : Math.round(ago / 60) + 'm ago';
+                html += `<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;border-bottom:1px solid rgba(255,255,255,0.06)">
+                    <div style="flex:1;font-size:11px;color:#a1a1aa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escapeHtmlAttr(entry.text)}">${escapeHtml(preview)}</div>
+                    <span style="font-size:9px;color:#52525b;white-space:nowrap">${timeStr}</span>
+                    <button onclick="useClipEntry(${idx})" style="font-size:10px;padding:2px 8px;background:rgba(16,163,127,0.15);border:1px solid rgba(16,163,127,0.3);color:#10a37f;border-radius:3px;cursor:pointer">Use</button>
+                    <button onclick="pasteClipEntry(${idx})" style="font-size:10px;padding:2px 8px;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.3);color:#8b5cf6;border-radius:3px;cursor:pointer">Paste</button>
+                </div>`;
+            });
+            html += '</div>';
+            chatArea.innerHTML = html;
+        });
+
+        // Context from OS highlight — always appends
+        ipcRenderer.on('context-captured', (event, text) => {
+            triggerShowAnimation();
+            latestHighlight = text || '';
+            if (text) {
+                selectionCount++;
+                currentContext = currentContext ? currentContext + '\n---\n' + text : text;
+                const display = currentContext.length > 300 ? currentContext.substring(0, 300) + '…' : currentContext;
+                contextBox.textContent = display;
+                contextBox.style.color = '#d4d4d8';
+                if (selectionCount > 1) {
+                    contextBox.style.borderLeftColor = '#eab308'; // yellow = accumulated
+                }
+                selectTabForContent(text);
+            } else {
+                contextBox.innerHTML = '<i style="color:#555">No text highlighted</i>';
+            }
+            updateCtxChars();
+            cmdInput.focus();
+        });
+
+        // Quiet context update from companion poller — no show animation
+        ipcRenderer.on('context-update-quiet', (event, text) => {
+            if (!text) return;
+            latestHighlight = text;
+            currentContext = text;
+            const display = text.length > 300 ? text.substring(0, 300) + '…' : text;
+            contextBox.textContent = display;
+            contextBox.style.color = '#d4d4d8';
+            contextBox.style.borderLeftColor = '';
+            selectionCount = 1;
+            updateCtxChars();
+        });
+
+        // Compact mode toggle
+        const compactBtn = document.getElementById('compact-btn');
+        if (compactBtn) {
+            compactBtn.addEventListener('click', () => {
+                document.body.classList.toggle('compact');
+                compactBtn.classList.toggle('active', document.body.classList.contains('compact'));
+            });
+        }
+
+        // Mode switcher (drag bar badge only — no sidebar)
+        let _activeMode = 'blueprint'; // 'blueprint' | 'teach'
+
+        function setMode(mode) {
+            _activeMode = mode;
+            const badge = document.getElementById('mode-badge');
+            if (mode === 'blueprint') {
+                badge.textContent = 'Blueprint'; badge.className = 'mode-badge';
+            } else {
+                badge.textContent = 'Teach Me'; badge.className = 'mode-badge teach';
+            }
+        }
+
+        const modeBadge = document.getElementById('mode-badge');
+        if (modeBadge) modeBadge.addEventListener('click', () => setMode(_activeMode === 'blueprint' ? 'teach' : 'blueprint'));
+
+        // Append new context when pinned (stacking highlights)
+        ipcRenderer.on('context-append', (event, text) => {
+            if (text) {
+                latestHighlight = text;
+                selectionCount++;
+                currentContext = currentContext ? currentContext + '\n---\n' + text : text;
+                const display = currentContext.length > 300 ? currentContext.substring(0, 300) + '…' : currentContext;
+                contextBox.textContent = display;
+                contextBox.style.color = '#d4d4d8';
+                contextBox.style.borderLeftColor = '#eab308';
+                updateCtxChars();
+                cmdInput.focus();
+            }
+        });
+
+        ipcRenderer.on('model-changed', (event, model) => {
+            const badge = document.getElementById('model-badge');
+            // Preserve provider icon prefix if it exists
+            const existing = badge.textContent;
+            const iconMatch = existing.match(/^[🏠🌐🟣]\s*/);
+            badge.textContent = (iconMatch ? iconMatch[0] : '') + model;
+        });
+
+        // Feature 3: Provider quick-switch via badge click
+        document.getElementById('model-badge').addEventListener('click', () => {
+            ipcRenderer.send('cycle-provider');
+        });
+
+        ipcRenderer.on('provider-changed', (event, info) => {
+            const badge = document.getElementById('model-badge');
+            badge.textContent = info.icon + ' ' + info.model;
+            badge.title = info.provider + ': ' + info.model;
+        });
+
+        // Feature 1: Language detection badge in overlay header
+        ipcRenderer.on('set-language', (event, langInfo) => {
+            const badge = document.getElementById('lang-badge');
+            window._detectedLanguage = langInfo;  // store for saveToMemory auto-tagging
+            if (langInfo) {
+                badge.textContent = langInfo.badge;
+                badge.title = langInfo.label;
+                badge.style.display = 'inline';
+                // Context box accent: code=cyan, text=green, other=purple
+                const cb = document.getElementById('context-box');
+                cb.classList.remove('lang-code', 'lang-text', 'lang-other');
+                const t = (langInfo.lang || '').toLowerCase();
+                if (['python', 'javascript', 'typescript', 'go', 'rust', 'c', 'cpp', 'java', 'ruby', 'php', 'swift', 'kotlin', 'css', 'html'].includes(t)) {
+                    cb.classList.add('lang-code');
+                } else if (['markdown', 'text', 'txt', 'prose'].includes(t)) {
+                    cb.classList.add('lang-text');
+                } else {
+                    cb.classList.add('lang-other');
+                }
+            } else {
+                badge.style.display = 'none';
+                const cb = document.getElementById('context-box');
+                cb.classList.remove('lang-code', 'lang-text', 'lang-other');
+            }
+        });
+
+        ipcRenderer.on('memory-found', (event, count) => {
+            memoryBadge.textContent = '🧠 ' + count;
+            memoryBadge.style.display = 'inline';
+            setTimeout(() => { memoryBadge.style.display = 'none'; }, 5000);
+        });
+
+        // Feature 4: Stack trace — clickable file:line links
+        ipcRenderer.on('stack-trace-parsed', (event, locations) => {
+            const container = document.getElementById('stack-links');
+            if (!locations || locations.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+            container.style.display = 'flex';
+            container.innerHTML = locations.slice(0, 5).map(loc => {
+                const basename = loc.file.split('/').pop();
+                return `<span class="stack-link" data-file="${loc.file}" data-line="${loc.line}" data-col="${loc.col}" title="${loc.file}:${loc.line}">📂 ${basename}:${loc.line}</span>`;
+            }).join('');
+            container.querySelectorAll('.stack-link').forEach(link => {
+                link.addEventListener('click', () => {
+                    ipcRenderer.send('open-in-editor', {
+                        file: link.dataset.file,
+                        line: parseInt(link.dataset.line),
+                        col: parseInt(link.dataset.col)
+                    });
+                });
+            });
+        });
+
+        // Feature 5: Source file indicator
+        ipcRenderer.on('source-file-detected', (event, filePath) => {
+            const el = document.getElementById('source-file');
+            if (filePath) {
+                const basename = filePath.split('/').pop();
+                el.textContent = '📄 ' + basename;
+                el.title = filePath;
+            } else {
+                el.textContent = '';
+                el.title = '';
+            }
+        });
+
+        ipcRenderer.on('conversation-cleared', () => {
+            messageHistory = [];
+            chatArea.innerHTML = '<div class="empty-state">Conversation cleared.</div>';
+        });
+
+        // Feature 4: Restore conversation from previous session
+        ipcRenderer.on('restore-conversation', (event, history) => {
+            if (!history || history.length === 0) return;
+            // Convert server-side conversationHistory to client-side messageHistory
+            // Skip system messages
+            messageHistory = history.filter(m => m.role !== 'system').map(m => ({
+                role: m.role,
+                content: m.content
+            }));
+            renderMessages();
+        });
+
+        // Pin toggle
+        pinBtn.addEventListener('click', () => {
+            ipcRenderer.send('toggle-pin');
+        });
+        ipcRenderer.on('pin-changed', (event, pinned) => {
+            pinBtn.classList.toggle('pinned', pinned);
+            pinBtn.title = pinned ? 'Unpin overlay' : 'Pin overlay';
+        });
+
+        // Persist feedback
+        ipcRenderer.on('persist-success', () => {
+            const btns = chatArea.querySelectorAll('.save-btn');
+            const last = btns[btns.length - 1];
+            if (last) {
+                last.textContent = '✓ Saved';
+                last.classList.add('saved');
+            }
+        });
+        ipcRenderer.on('persist-error', (event, err) => {
+            const btns = chatArea.querySelectorAll('.save-btn');
+            const last = btns[btns.length - 1];
+            if (last) { last.textContent = '✗ Error'; }
+        });
+
+        // Quick actions — bind all action buttons across all tabs
+        document.querySelectorAll('.actions button').forEach(btn => {
+            if (btn.dataset.action) {
+                btn.addEventListener('click', () => {
+                    sendCommand(btn.dataset.action + ' this', btn.dataset.action);
+                });
+            }
+        });
+
+        // Tab switching
+        const tabBtns = document.querySelectorAll('.action-tabs .tab');
+        const actionPanels = {
+            code: document.getElementById('actions-code'),
+            text: document.getElementById('actions-text'),
+            tools: document.getElementById('actions-tools')
+        };
+
+        function switchTab(tabName) {
+            tabBtns.forEach(t => t.classList.remove('active'));
+            Object.values(actionPanels).forEach(p => { if (p) p.style.display = 'none'; });
+            const activeTab = document.querySelector(`.tab[data-tab="${tabName}"]`);
+            if (activeTab) activeTab.classList.add('active');
+            if (actionPanels[tabName]) actionPanels[tabName].style.display = 'flex';
+        }
+
+        tabBtns.forEach(tab => {
+            tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+        });
+
+        // Auto-select tab based on content type and hide irrelevant tabs
+        function selectTabForContent(text) {
+            if (!text) return;
+            const codeTab = document.querySelector('.tab[data-tab="code"]');
+            const textTab = document.querySelector('.tab[data-tab="text"]');
+
+            const codeSignals = /[{}\[\]();]|function |const |let |var |import |def |class |=>|->/.test(text);
+            if (codeSignals) {
+                switchTab('code');
+                codeTab.classList.remove('hidden-tab');
+                textTab.classList.add('hidden-tab');
+            } else {
+                switchTab('text');
+                textTab.classList.remove('hidden-tab');
+                codeTab.classList.add('hidden-tab');
+            }
+        }
+
+        // Restore all tabs (used on new conversation / context clear)
+        function showAllTabs() {
+            tabBtns.forEach(t => t.classList.remove('hidden-tab'));
+        }
+
+        // Ollama offline banner
+        ipcRenderer.on('ollama-status', (event, status) => {
+            const banner = document.getElementById('ollama-banner');
+            if (banner) banner.style.display = status === 'offline' ? 'block' : 'none';
+        });
+
+        // Auto-action from toolbar-first mode
+        ipcRenderer.on('auto-action', (event, action) => {
+            // Switch to the correct tab for the action
+            const textActions = ['rewrite', 'simplify', 'explain', 'summarize', 'translate', 'reply', 'search'];
+            if (textActions.includes(action)) switchTab('text');
+            else switchTab('code');
+            sendCommand(action + ' this', action);
+        });
+
+        // Custom action from toolbar — receives the full prompt
+        ipcRenderer.on('auto-custom-action', (event, prompt) => {
+            sendCommand(prompt, 'custom');
+        });
+
+        // Dynamic custom action buttons in the overlay
+        ipcRenderer.on('set-custom-actions', (event, actions) => {
+            const toolsDiv = document.getElementById('actions-tools');
+            // Remove old custom buttons
+            toolsDiv.querySelectorAll('.custom-action-btn').forEach(b => b.remove());
+            // Add new ones
+            (actions || []).forEach((ca, idx) => {
+                const btn = document.createElement('button');
+                btn.textContent = ca.label;
+                btn.className = 'custom-action-btn';
+                btn.style.cssText = 'background:rgba(234,179,8,0.12);border:1px dashed rgba(234,179,8,0.35);color:#eab308;';
+                btn.addEventListener('click', () => {
+                    sendCommand(ca.prompt, 'custom');
+                });
+                toolsDiv.appendChild(btn);
+            });
+        });
+
+        // ── Blueprint Printer ─────────────────────────────────────────
+        function sendBlueprint() {
+            const text = cmdInput.value.trim() || currentContext.trim();
+            if (!text) {
+                chatArea.innerHTML = '<div class="msg"><div class="msg-assistant" style="color:#ef4444">⚠ No text to blueprint. Highlight something or type in the input box first.</div></div>';
+                return;
+            }
+            cmdInput.value = '';
+            ipcRenderer.send('blueprint-open-panel', text);
+        }
+
+        // ── Teach Me ──────────────────────────────────────────────────
+        function sendTeach() {
+            const text = cmdInput.value.trim() || currentContext.trim();
+            if (!text) {
+                chatArea.innerHTML = '<div class="msg"><div class="msg-assistant" style="color:#ef4444">⚠ Nothing to teach. Highlight some code or text first.</div></div>';
+                return;
+            }
+            cmdInput.value = '';
+            ipcRenderer.send('teach-open-panel', text);
+        }
+
+        document.getElementById('btn-blueprint') && document.getElementById('btn-blueprint').addEventListener('click', sendBlueprint);
+        document.getElementById('btn-teach') && document.getElementById('btn-teach').addEventListener('click', sendTeach);
+
+        // ── Panel Toggle Button ─────────────────────────────────────────
+        document.getElementById('btn-toggle-companion').addEventListener('click', () => {
+            const text = cmdInput.value.trim() || currentContext.trim();
+            ipcRenderer.send('toggle-companion', text);
+        });
+
+        // Push current overlay context → companion panel's active tab
+        document.getElementById('btn-push-context').addEventListener('click', () => {
+            const text = cmdInput.value.trim() || currentContext.trim();
+            if (text) ipcRenderer.send('push-context-to-panel', text);
+        });
+
+        // Sync button active state when companion opens/closes
+        ipcRenderer.on('panel-state', (_, state) => {
+            const btn = document.getElementById('btn-toggle-companion');
+            if (btn) btn.classList.toggle('active', !!state.companion);
+            const dockBtn = document.getElementById('btn-toggle-companion-dock');
+            if (dockBtn) dockBtn.classList.toggle('active', !!state.companion);
+        });
+
+        // ── Dock button wiring ──────────────────────────────────────────
+        const dockCompanion = document.getElementById('btn-toggle-companion-dock');
+        if (dockCompanion) {
+            dockCompanion.addEventListener('click', () => {
+                const text = cmdInput.value.trim() || currentContext.trim();
+                ipcRenderer.send('toggle-companion', text);
+            });
+        }
+        const dockPush = document.getElementById('btn-push-context-dock');
+        if (dockPush) {
+            dockPush.addEventListener('click', () => {
+                const text = cmdInput.value.trim() || currentContext.trim();
+                if (text) ipcRenderer.send('push-context-to-panel', text);
+            });
+        }
+        // Dock data-action buttons → sendCommand (same as hidden action buttons)
+        document.querySelectorAll('.dock-btn[data-action]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                sendCommand(btn.dataset.action);
+                document.querySelectorAll('.dock-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                setTimeout(() => btn.classList.remove('active'), 1200);
+            });
+        });
+
+        // ── Engine state → Blueprint button indicator ───────────────
+        ipcRenderer.on('engine-state', (_, state) => {
+            const bpBtn = document.querySelector('.dock-btn[data-action="fix"]');
+            // We use the Fix button as proxy — Blueprint is the mode badge
+            const modeBadge = document.getElementById('mode-badge');
+            const companion = document.getElementById('btn-toggle-companion-dock');
+            if (state.ready) {
+                if (modeBadge) {
+                    modeBadge.style.opacity = '';
+                    modeBadge.title = 'Blueprint mode (Manifesto Engine connected)';
+                }
+                if (companion) companion.title = 'Open Panels (Blueprint ready)';
+            } else {
+                if (modeBadge) {
+                    modeBadge.style.opacity = '0.4';
+                    modeBadge.title = 'Blueprint requires Manifesto Engine (not connected)';
+                }
+            }
+        });
+
+
+        // Show loading state as soon as main process accepts the request
+        ipcRenderer.on('blueprint-incoming', (event, promptSnippet) => {
+            chatArea.innerHTML = '';
+            const loadDiv = document.createElement('div');
+            loadDiv.className = 'msg';
+            loadDiv.id = 'blueprint-loading';
+            loadDiv.innerHTML = `
+                <div class="msg-user"><strong>You:</strong> 🔧 Blueprint: <em>${escapeHtml(promptSnippet)}</em></div>
+                <div class="msg-assistant">
+                    <span class="streaming-cursor"><span></span></span>
+                    <span style="color:#8b949e;font-size:12px"> Generating blueprint…</span>
+                </div>`;
+            chatArea.appendChild(loadDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+            switchTab('tools');
+        });
+
+        ipcRenderer.on('blueprint-ready', (event, data) => {
+            const loading = document.getElementById('blueprint-loading');
+            if (loading) loading.remove();
+
+            const meta = [];
+            if (data.blueprint_type) meta.push('📐 ' + data.blueprint_type);
+            if (data.domains_matched && data.domains_matched.length) meta.push('📁 ' + data.domains_matched.join(', '));
+
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'msg';
+            msgDiv.innerHTML = `
+                <div class="msg-assistant">
+                    ${meta.length ? '<div style="font-size:10px;color:#8b949e;margin-bottom:6px">' + escapeHtml(meta.join(' · ')) + '</div>' : ''}
+                    ${renderMarkdown(data.manifesto || '')}
+                    <div class="msg-toolbar">
+                        <button onclick="copyBlueprint(this, ${JSON.stringify(data.manifesto || '').replace(/</g, '\\u003c')})">
+                            📋 Copy
+                        </button>
+                        <button onclick="saveBlueprint(this, ${JSON.stringify(data.manifesto || '').replace(/</g, '\\u003c')})">
+                            💾 Save
+                        </button>
+                    </div>
+                </div>`;
+            chatArea.appendChild(msgDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        });
+
+        ipcRenderer.on('blueprint-error', (event, errMsg) => {
+            const loading = document.getElementById('blueprint-loading');
+            if (loading) loading.remove();
+            const errDiv = document.createElement('div');
+            errDiv.className = 'msg';
+            errDiv.innerHTML = '<div class="msg-assistant error">⚠ Blueprint failed: ' + escapeHtml(errMsg) + '</div>';
+            chatArea.appendChild(errDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        });
+
+        function copyBlueprint(btn, text) {
+            ipcRenderer.send('blueprint-copy', text);
+            btn.textContent = '✓ Copied';
+            btn.classList.add('success');
+            setTimeout(() => { btn.textContent = '📋 Copy'; btn.classList.remove('success'); }, 2000);
+        }
+
+        function saveBlueprint(btn, text) {
+            ipcRenderer.send('blueprint-save', text);
+            btn.textContent = '✓ Saving…';
+        }
+
+        // Ctrl+Shift+B from Locus context — fires blueprint-print-hotkey IPC
+        ipcRenderer.on('blueprint-print-hotkey', () => {
+            sendBlueprint();
+        });
+
+        cmdInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && cmdInput.value.trim()) {
+                sendCommand(cmdInput.value.trim());
+                cmdInput.value = '';
+            }
+        });
+
+        sendBtn.addEventListener('click', () => {
+            if (cmdInput.value.trim()) {
+                sendCommand(cmdInput.value.trim());
+                cmdInput.value = '';
+            }
+        });
+
+        newBtn.addEventListener('click', () => {
+            ipcRenderer.send('new-conversation');
+            messageHistory = [];
+            currentContext = '';
+            latestHighlight = '';
+            selectionCount = 0;
+            contextBox.innerHTML = '<i style="color:#555">Highlight text anywhere</i>';
+            contextBox.style.borderLeftColor = '#10a37f';
+            chatArea.innerHTML = '<div class="empty-state">New conversation started.</div>';
+            showAllTabs();
+            updateCtxChars();
+        });
+
+        // Export conversation as markdown
+        document.getElementById('export-btn').addEventListener('click', () => {
+            if (messageHistory.length === 0) return;
+            let md = '# Locus Conversation\n\n';
+            md += `_Exported: ${new Date().toLocaleString()}_\n\n`;
+            if (currentContext) {
+                md += '## Context\n\n```\n' + currentContext + '\n```\n\n';
+            }
+            md += '## Chat\n\n';
+            for (const msg of messageHistory) {
+                if (msg.role === 'user') {
+                    md += '**You:** ' + msg.content + '\n\n';
+                } else {
+                    md += '**Locus:** ' + msg.content + '\n\n---\n\n';
+                }
+            }
+            ipcRenderer.send('export-chat', md);
+        });
+        ipcRenderer.on('export-done', (event, filepath) => {
+            const btn = document.getElementById('export-btn');
+            btn.textContent = '✓';
+            btn.style.color = '#10b981';
+            setTimeout(() => { btn.textContent = '📄'; btn.style.color = ''; }, 2000);
+        });
+
+        // Context toolbar
+        document.getElementById('ctx-clear').addEventListener('click', () => {
+            currentContext = '';
+            latestHighlight = '';
+            selectionCount = 0;
+            contextBox.innerHTML = '<i style="color:#555">Context cleared</i>';
+            contextBox.style.borderLeftColor = '#10a37f';
+            showAllTabs();
+            updateCtxChars();
+        });
+
+        document.getElementById('ctx-keep').addEventListener('click', () => {
+            if (!currentContext) return;
+            // Push context as a note into chat history (no Ollama call)
+            messageHistory.push({ role: 'user', content: '[Context added]\n' + currentContext });
+            renderMessages();
+            currentContext = '';
+            contextBox.innerHTML = '<i style="color:#555">Context pushed to chat ✓</i>';
+            contextBox.style.borderLeftColor = '#10a37f';
+        });
+
+        // ── → Panel button: push context into companion panel ────────
+        document.getElementById('ctx-push-panel').addEventListener('click', () => {
+            const text = currentContext.trim() || cmdInput.value.trim();
+            if (!text) return;
+            ipcRenderer.send('push-context-to-panel', text);
+            // Open companion if not already open
+            ipcRenderer.send('toggle-companion', text);
+            // Visual feedback
+            const btn = document.getElementById('ctx-push-panel');
+            const orig = btn.textContent;
+            btn.textContent = '✓ Sent';
+            btn.style.color = 'var(--green)';
+            btn.style.borderColor = 'rgba(63,185,80,0.4)';
+            btn.style.background = 'rgba(63,185,80,0.1)';
+            setTimeout(() => {
+                btn.textContent = orig;
+                btn.style.color = '';
+                btn.style.borderColor = '';
+                btn.style.background = '';
+            }, 1200);
+        });
+
+        function sendCommand(command, action) {
+            if (isStreaming) return;
+            if (!command || !command.trim()) return;
+
+            // JSON Formatter — pure client-side, no LLM needed
+            if (action === 'json' && latestHighlight) {
+                try {
+                    const formatted = JSON.stringify(JSON.parse(latestHighlight.trim()), null, 2);
+                    messageHistory.push({ role: 'user', content: 'Format JSON', action: 'json' });
+                    messageHistory.push({ role: 'assistant', content: '```json\n' + formatted + '\n```' });
+                    renderMessages();
+                    return;
+                } catch (e) {
+                    // Not valid JSON — send to LLM to try to fix/format it
+                    command = 'Format and fix this JSON/data. Return only the formatted result.';
+                }
+            }
+
+            // Regex Helper — specialized prompt
+            if (action === 'regex' && latestHighlight) {
+                const isRegex = /^\/.*\/[gimsuy]*$/.test(latestHighlight.trim()) || /[\[\]\(\)\*\+\?\{\}\\]/.test(latestHighlight);
+                if (isRegex) {
+                    // Feature 6: Live regex tester — show matches client-side
+                    try {
+                        const patternMatch = latestHighlight.trim().match(/^\/(.+)\/([gimsuy]*)$/);
+                        let re;
+                        if (patternMatch) {
+                            re = new RegExp(patternMatch[1], patternMatch[2] || 'g');
+                        } else {
+                            re = new RegExp(latestHighlight.trim(), 'g');
+                        }
+                        // Show regex tester panel instead of sending to LLM
+                        const testerHtml = `<div class="regex-panel">
+                            <div style="font-size:10px;color:#f59e0b;margin-bottom:4px">🔍 Regex: <code>${escapeHtml(latestHighlight.trim())}</code></div>
+                            <input type="text" id="regex-test-input" placeholder="Paste test string here..." />
+                            <div class="regex-result" id="regex-result">Type a test string above</div>
+                            <div style="margin-top:6px">
+                                <button onclick="askLlmRegex()" style="font-size:10px;padding:3px 8px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);color:#f59e0b;border-radius:3px;cursor:pointer">🧠 Explain with AI</button>
+                            </div>
+                        </div>`;
+                        messageHistory.push({ role: 'user', content: 'Test regex: ' + latestHighlight.trim(), action: 'regex' });
+                        messageHistory.push({ role: 'assistant', content: '[regex-tester]' });
+                        renderMessages();
+                        // Replace last message with tester panel
+                        const msgs = chatArea.querySelectorAll('.msg');
+                        const lastMsg = msgs[msgs.length - 1];
+                        if (lastMsg) lastMsg.innerHTML = testerHtml;
+                        // Wire up live testing
+                        const testInput = document.getElementById('regex-test-input');
+                        const resultDiv = document.getElementById('regex-result');
+                        if (testInput) {
+                            testInput.addEventListener('input', () => {
+                                const testStr = testInput.value;
+                                if (!testStr) { resultDiv.textContent = 'Type a test string above'; return; }
+                                try {
+                                    const re2 = new RegExp(re.source, re.flags);
+                                    let highlighted = '';
+                                    let lastIdx = 0;
+                                    let match;
+                                    let matchCount = 0;
+                                    while ((match = re2.exec(testStr)) !== null) {
+                                        highlighted += escapeHtml(testStr.slice(lastIdx, match.index));
+                                        highlighted += '<span class="regex-match">' + escapeHtml(match[0]) + '</span>';
+                                        lastIdx = re2.lastIndex;
+                                        matchCount++;
+                                        if (!re2.global) break;
+                                        if (matchCount > 100) break;  // safety
+                                    }
+                                    highlighted += escapeHtml(testStr.slice(lastIdx));
+                                    resultDiv.innerHTML = matchCount + ' match' + (matchCount !== 1 ? 'es' : '') + ':<br>' + highlighted;
+                                } catch (e2) {
+                                    resultDiv.innerHTML = '<span class="regex-error">Error: ' + escapeHtml(e2.message) + '</span>';
+                                }
+                            });
+                            testInput.focus();
+                        }
+                        isStreaming = false;
+                        return;
+                    } catch (e) {
+                        // Invalid regex — fall through to LLM explanation
+                        command = 'Explain this regex pattern step by step. What does each part match?';
+                    }
+                } else {
+                    command = 'Generate a regex pattern that matches: ' + latestHighlight.trim() + '. Show the regex and explain it.';
+                }
+            }
+
+            // Reply — generate a contextual reply to the highlighted comment/message.
+            // Include the highlighted text directly in the command so it works even when
+            // conversationHistory already has a stale system context from a previous action.
+            if (action === 'reply' && latestHighlight) {
+                command = 'The user highlighted this comment and wants you to write a reply to it:\n\n---\n' + latestHighlight.trim() + '\n---\n\nWrite a thoughtful, contextual reply to the above comment. Match the tone and register of the original. Be direct and natural — no corporate speak, no filler. Keep it concise (2-4 sentences unless the topic warrants more). Return ONLY the reply text, nothing else.';
+            }
+
+            isStreaming = true;
+            responseBuffer = '';
+
+            // For reply, store a clean display label instead of the full LLM prompt
+            let displayContent = command;
+            if (action === 'reply') {
+                const preview = latestHighlight.length > 60 ? latestHighlight.substring(0, 60) + '…' : latestHighlight;
+                displayContent = '💬 Reply to: "' + preview + '"';
+            }
+
+            messageHistory.push({ role: 'user', content: command, displayContent: displayContent, action: action || null });
+            renderMessages();
+
+            const streamDiv = document.createElement('div');
+            streamDiv.className = 'msg';
+            streamDiv.innerHTML = '<div class="msg-assistant"><span class="streaming-cursor"><span></span></span></div>';
+            chatArea.appendChild(streamDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+
+            // For toolbar actions (fix, rewrite, etc.) use only the latest highlight
+            // For chat/freeform, use the full accumulated context
+            var contextToSend = action ? latestHighlight : currentContext;
+            ipcRenderer.send('chat', { context: contextToSend, command, action: action || null });
+
+            // Safety timeout — unlock after 60s if no response
+            setTimeout(() => {
+                if (isStreaming) {
+                    isStreaming = false;
+                    const streamDiv = chatArea.querySelector('.msg:last-child .msg-assistant');
+                    if (streamDiv && responseBuffer) {
+                        messageHistory.push({ role: 'assistant', content: responseBuffer });
+                        renderMessages();
+                    }
+                }
+            }, 60000);
+        }
+
+        // Streaming
+        ipcRenderer.on('chat-chunk', (event, chunk) => {
+            responseBuffer += chunk;
+            updateTokenBadge(chunk);  // v3.6: count tokens inline (was duplicate listener)
+            const streamDiv = chatArea.querySelector('.msg:last-child .msg-assistant');
+            if (streamDiv) {
+                // Use escapeHtml during streaming for performance, markdown on done
+                streamDiv.innerHTML = escapeHtml(responseBuffer) + '<span class="streaming-cursor"></span>';
+            }
+            chatArea.scrollTop = chatArea.scrollHeight;
+        });
+
+        ipcRenderer.on('chat-done', () => {
+            isStreaming = false;
+            messageHistory.push({ role: 'assistant', content: responseBuffer });
+            renderMessages(); // This will render final markdown
+        });
+
+        ipcRenderer.on('chat-error', (event, err) => {
+            isStreaming = false;
+            responseBuffer = '';
+            const streamDiv = chatArea.querySelector('.msg:last-child .msg-assistant');
+            if (streamDiv) {
+                streamDiv.innerHTML = '<span class="error">Error: ' + escapeHtml(err) + '</span>';
+            }
+            // Add error to history so it persists visually
+            messageHistory.push({ role: 'assistant', content: '⚠ Error: ' + (err || 'Unknown error') });
+        });
+
+        ipcRenderer.on('copied', () => {
+            const btns = chatArea.querySelectorAll('.copy-btn');
+            const last = btns[btns.length - 1];
+            if (last) {
+                last.textContent = '✓ Copied';
+                last.classList.add('success');
+                setTimeout(() => { last.textContent = 'Copy'; last.classList.remove('success'); }, 1500);
+            }
+        });
+
+        // Diff computation for fix/rewrite actions
+        function computeDiff(original, modified) {
+            var origLines = original.split('\n');
+            var modLines = modified.split('\n');
+            var result = [];
+            var maxLen = Math.max(origLines.length, modLines.length);
+            for (var i = 0; i < maxLen; i++) {
+                var oLine = i < origLines.length ? origLines[i] : null;
+                var mLine = i < modLines.length ? modLines[i] : null;
+                if (oLine === mLine) {
+                    result.push({ type: 'ctx', text: oLine });
+                } else {
+                    if (oLine !== null) result.push({ type: 'del', text: oLine });
+                    if (mLine !== null) result.push({ type: 'add', text: mLine });
+                }
+            }
+            return result;
+        }
+
+        function extractCodeBlock(text) {
+            var match = text.match(/```\w*\n([\s\S]*?)```/);
+            return match ? match[1].trim() : null;
+        }
+
+        function renderMessages() {
+            // Cap client-side history at 50 messages
+            if (messageHistory.length > 50) {
+                messageHistory = messageHistory.slice(-50);
+            }
+            let html = '';
+            for (let i = 0; i < messageHistory.length; i++) {
+                const msg = messageHistory[i];
+                if (msg.role === 'user') {
+                    const shown = escapeHtml(msg.displayContent || msg.content);
+                    html += `<div class="msg">
+        <div class="msg-user"><strong>You:</strong> ${shown}</div>
+        </div>`;
+                } else {
+                    // Check if preceding user message was a code-modifying action
+                    var prevMsg = i > 0 ? messageHistory[i - 1] : null;
+                    var isDiffAction = prevMsg && ['fix', 'rewrite', 'optimize'].includes(prevMsg.action);
+                    var responseCode = extractCodeBlock(msg.content);
+                    // Also show diff when any action produces a code block and context was code
+                    var isCodeContext = currentContext && /[{}\[\]();]|function |const |let |def |class |=>/.test(currentContext);
+                    var showDiff = (isDiffAction || (responseCode && isCodeContext && prevMsg && prevMsg.action)) && currentContext && responseCode;
+
+                    if (showDiff) {
+                        var diffLines = computeDiff(currentContext.trim(), responseCode);
+                        var diffHtml = '<div class="diff-container">';
+                        diffHtml += '<div class="diff-header">Changes</div>';
+                        for (var d = 0; d < diffLines.length; d++) {
+                            var dl = diffLines[d];
+                            var prefix = dl.type === 'add' ? '+' : (dl.type === 'del' ? '-' : ' ');
+                            var cls = 'diff-' + dl.type;
+                            diffHtml += '<div class="diff-line ' + cls + '">' + prefix + ' ' + escapeHtml(dl.text).replace(/<br>/g, '') + '</div>';
+                        }
+                        diffHtml += '<div class="diff-actions">';
+                        diffHtml += '<button class="diff-accept" onclick="acceptDiff(' + i + ')">✓ Accept</button>';
+                        diffHtml += '<button class="diff-reject" onclick="deleteMessage(' + i + ')">✕ Reject</button>';
+                        diffHtml += '</div></div>';
+                        html += `<div class="msg">
+            <div class="msg-assistant">${diffHtml}</div>
+            <div class="msg-toolbar">
+                <button class="copy-btn" onclick="copyResponse(${i})">Copy</button>
+                <button class="save-btn" onclick="saveToMemory(${i})">💾 Save</button>
+                <button class="chain-btn" onclick="toggleChainMenu(this)">→ Chain</button>
+                <div class="chain-menu" style="display:none">
+                    <button onclick="chainAction(${i},'fix')">Fix</button>
+                    <button onclick="chainAction(${i},'rewrite')">Rewrite</button>
+                    <button onclick="chainAction(${i},'simplify')">Simplify</button>
+                    <button onclick="chainAction(${i},'translate')">Translate</button>
+                    <button onclick="chainAction(${i},'summarize')">Sum</button>
+                    <button onclick="chainAction(${i},'explain')">Explain</button>
+                    <button onclick="chainAction(${i},'reply')">Reply</button>
+                </div>
+            </div>
+        </div>`;
+                    } else {
+                        html += `<div class="msg">
+            <div class="msg-assistant">${renderMarkdown(msg.content)}</div>
+            <div class="msg-toolbar">
+                <button class="copy-btn" onclick="copyResponse(${i})">Copy</button>
+                <button onclick="applyInPlace(${i})">Apply</button>
+                <button class="save-btn" onclick="saveToMemory(${i})">💾 Save</button>
+                <button class="chain-btn" onclick="toggleChainMenu(this)">→ Chain</button>
+                <button onclick="deleteMessage(${i})">✕</button>
+                <div class="chain-menu" style="display:none">
+                    <button onclick="chainAction(${i},'fix')">Fix</button>
+                    <button onclick="chainAction(${i},'rewrite')">Rewrite</button>
+                    <button onclick="chainAction(${i},'simplify')">Simplify</button>
+                    <button onclick="chainAction(${i},'translate')">Translate</button>
+                    <button onclick="chainAction(${i},'summarize')">Sum</button>
+                    <button onclick="chainAction(${i},'explain')">Explain</button>
+                    <button onclick="chainAction(${i},'reply')">Reply</button>
+                </div>
+            </div>
+        </div>`;
+                    }
+                }
+            }
+            chatArea.innerHTML = html || '<div class="empty-state">Ready. Highlight → invoke → command.</div>';
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        window.acceptDiff = function (idx) {
+            var msg = messageHistory[idx];
+            if (!msg) return;
+            var code = extractCodeBlock(msg.content);
+            if (code) {
+                ipcRenderer.send('copy-response', code);
+                ipcRenderer.send('apply-in-place', code);
+            }
+        };
+
+        window.copyResponse = function (idx) {
+            const msg = messageHistory[idx];
+            if (msg) ipcRenderer.send('copy-response', msg.content);
+        };
+
+        window.toggleChainMenu = function (btn) {
+            const menu = btn.parentElement.querySelector('.chain-menu');
+            if (menu) {
+                menu.style.display = menu.style.display === 'none' ? 'flex' : 'none';
+            }
+        };
+
+        window.chainAction = function (idx, action) {
+            const msg = messageHistory[idx];
+            if (!msg) return;
+            // Use the response content as the context for the next action
+            latestHighlight = msg.content;
+            sendCommand(action + ' this', action);
+            // Close the chain menu
+            document.querySelectorAll('.chain-menu').forEach(m => m.style.display = 'none');
+        };
+
+        // Clipboard history entries — stored when received
+        let clipEntries = [];
+        ipcRenderer.on('clipboard-history', (event, entries) => {
+            clipEntries = entries;
+        });
+
+        window.useClipEntry = function (idx) {
+            if (!clipEntries[idx]) return;
+            latestHighlight = clipEntries[idx].text;
+            currentContext = clipEntries[idx].text;
+            selectionCount = 1;
+            contextBox.textContent = 'Clipboard entry loaded ✓';
+            contextBox.style.color = '#10a37f';
+            updateCtxChars();
+        };
+
+        window.pasteClipEntry = function (idx) {
+            if (!clipEntries[idx]) return;
+            ipcRenderer.send('apply-in-place', clipEntries[idx].text);
+        };
+
+        window.applyInPlace = function (idx) {
+            const msg = messageHistory[idx];
+            if (msg) ipcRenderer.send('apply-in-place', msg.content);
+        };
+
+        // Feature 6: Ask LLM to explain regex from the tester panel
+        window.askLlmRegex = function () {
+            if (!latestHighlight) return;
+            sendCommand('Explain this regex pattern step by step. What does each part match?', 'regex-explain');
+        };
+
+        // Feature 7: Clipboard queue — accumulate snippets and send all at once
+        let clipQueue = [];
+        function renderClipQueue() {
+            const addBtn = document.getElementById('clip-queue-add');
+            if (addBtn) addBtn.textContent = '\ud83d\udccb +Queue' + (clipQueue.length > 0 ? ' (' + clipQueue.length + ')' : '');
+        }
+
+        document.getElementById('clip-queue-add').addEventListener('click', () => {
+            if (!latestHighlight || !latestHighlight.trim()) return;
+            clipQueue.push(latestHighlight.trim());
+            renderClipQueue();
+            // Visual feedback
+            const btn = document.getElementById('clip-queue-add');
+            btn.textContent = '\u2713 Added';
+            setTimeout(() => renderClipQueue(), 800);
+        });
+
+        document.getElementById('clip-queue-clear').addEventListener('click', () => {
+            clipQueue = [];
+            renderClipQueue();
+        });
+
+        document.getElementById('clip-queue-send').addEventListener('click', () => {
+            if (clipQueue.length === 0) return;
+            // Concatenate all queued items as context
+            const combined = clipQueue.map((item, i) => `--- Snippet ${i + 1} ---\n${item}`).join('\n\n');
+            latestHighlight = combined;
+            currentContext = combined;
+            selectionCount = clipQueue.length;
+            const display = combined.length > 300 ? combined.substring(0, 300) + '\u2026' : combined;
+            contextBox.textContent = display;
+            contextBox.style.color = '#06b6d4';
+            contextBox.style.borderLeftColor = '#06b6d4';
+            updateCtxChars();
+            // Clear queue after sending
+            clipQueue = [];
+            renderClipQueue();
+            // Focus input so user can type a question about the combined context
+            cmdInput.focus();
+            cmdInput.placeholder = 'Ask about ' + selectionCount + ' queued snippets...';
+        });
+
+        window.deleteMessage = function (idx) {
+            // Delete this message and its paired user/assistant message
+            if (messageHistory[idx]?.role === 'assistant' && idx > 0 && messageHistory[idx - 1]?.role === 'user') {
+                messageHistory.splice(idx - 1, 2);
+            } else {
+                messageHistory.splice(idx, 1);
+            }
+            renderMessages();
+        };
+
+        window.saveToMemory = function (idx) {
+            const msg = messageHistory[idx];
+            if (!msg) return;
+
+            // Find the preceding user message for context
+            let userQuery = '';
+            let actionType = '';
+            for (let i = idx - 1; i >= 0; i--) {
+                if (messageHistory[i].role === 'user') {
+                    userQuery = messageHistory[i].content;
+                    actionType = messageHistory[i].action || '';
+                    break;
+                }
+            }
+
+            const lesson = userQuery
+                ? `Q: ${userQuery}\nA: ${msg.content}`
+                : msg.content;
+
+            // Feature 3: Auto-tag with language and action
+            const langTag = window._detectedLanguage ? window._detectedLanguage.lang : '';
+            const tags = ['locus', langTag, actionType, 'auto-persist'].filter(Boolean).join(',');
+
+            ipcRenderer.send('persist-to-cortex', {
+                content: lesson,
+                tags: tags
+            });
+        };
+
+        // #4: Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') ipcRenderer.send('dismiss');
+
+            // Ctrl+Enter: send current input
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                sendBtn.click();
+                return;
+            }
+
+            // Ctrl+1-6: quick action buttons
+            if (e.ctrlKey && e.key >= '1' && e.key <= '6') {
+                e.preventDefault();
+                const actions = ['fix', 'explain', 'rewrite', 'summarize', 'test', 'document'];
+                const idx = parseInt(e.key) - 1;
+                if (actions[idx]) {
+                    const btn = document.querySelector(`[data-action="${actions[idx]}"]`);
+                    if (btn) btn.click();
+                }
+                return;
+            }
+
+            // Ctrl+S: screenshot capture
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                document.getElementById('screenshot-btn').click();
+                return;
+            }
+
+            // Ctrl+E: export conversation
+            if (e.ctrlKey && e.key === 'e') {
+                e.preventDefault();
+                document.getElementById('export-btn').click();
+                return;
+            }
+        });
+
+        function escapeHtml(text) {
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/\n/g, '<br>');
+        }
+
+        // For use in HTML attributes (no <br> injection)
+        function escapeHtmlAttr(text) {
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        // ── v3.6 Feature 1: Token Counter ────────────────────
+        let sessionTokens = 0;
+        function estimateTokens(text) {
+            // Rough estimate: 1 token ≈ 4 chars for English
+            return Math.ceil((text || '').length / 4);
+        }
+        function updateTokenBadge(text) {
+            const tokens = estimateTokens(text);
+            sessionTokens += tokens;
+            const badge = document.getElementById('token-badge');
+            if (sessionTokens > 1000) {
+                badge.textContent = (sessionTokens / 1000).toFixed(1) + 'k tok';
+            } else {
+                badge.textContent = sessionTokens + ' tok';
+            }
+        }
+        // Token counting is now handled inline in the main chat-chunk listener above
+        // to avoid duplicate ipcRenderer.on('chat-chunk') registrations.
+
+        // ── v3.6 Feature 2: Quick Response Actions ───────────
+        const responseMenu = document.createElement('div');
+        responseMenu.className = 'response-menu';
+        responseMenu.innerHTML = `
+            <button data-action="copy-code">📋 Copy Code Block</button>
+            <button data-action="copy-all">📄 Copy Full Response</button>
+            <button data-action="save-snippet">💾 Save to CortexDB</button>
+            <button data-action="run-code">▶️ Run Code</button>
+        `;
+        document.body.appendChild(responseMenu);
+
+        let rightClickTarget = null;
+        document.getElementById('chat').addEventListener('contextmenu', (e) => {
+            const msgEl = e.target.closest('.msg');
+            if (!msgEl || !msgEl.classList.contains('assistant')) return;
+            e.preventDefault();
+            rightClickTarget = msgEl;
+            responseMenu.style.display = 'block';
+            responseMenu.style.left = e.clientX + 'px';
+            responseMenu.style.top = e.clientY + 'px';
+        });
+        document.addEventListener('click', () => { responseMenu.style.display = 'none'; });
+
+        responseMenu.addEventListener('click', (e) => {
+            const action = e.target.dataset.action;
+            if (!action || !rightClickTarget) return;
+            const fullText = rightClickTarget.textContent || '';
+            // Extract code blocks
+            const codeEl = rightClickTarget.querySelector('pre code, code');
+            const codeText = codeEl ? codeEl.textContent : '';
+
+            if (action === 'copy-code') {
+                navigator.clipboard.writeText(codeText || fullText);
+            } else if (action === 'copy-all') {
+                navigator.clipboard.writeText(fullText);
+            } else if (action === 'save-snippet') {
+                ipcRenderer.send('save-cortex', fullText);
+            } else if (action === 'run-code') {
+                if (codeText) {
+                    // Try to detect language from code block class
+                    const langClass = codeEl ? codeEl.className.match(/language-(\w+)/) : null;
+                    const lang = langClass ? langClass[1] : 'python';
+                    ipcRenderer.send('run-code', { code: codeText, language: lang });
+                }
+            }
+            responseMenu.style.display = 'none';
+        });
+
+        // ── v3.6 Feature 3: Code Runner output ───────────────
+        ipcRenderer.on('code-run-result', (ev, result) => {
+            const area = document.getElementById('chat');
+            const div = document.createElement('div');
+            if (result.error) {
+                div.className = 'code-output error';
+                div.textContent = '❌ ' + result.error;
+            } else {
+                div.className = 'code-output ' + (result.exitCode === 0 ? 'success' : 'error');
+                let output = '';
+                if (result.stdout) output += result.stdout;
+                if (result.stderr) output += (output ? '\n' : '') + '⚠ ' + result.stderr;
+                div.textContent = (result.exitCode === 0 ? '✓ ' : '✗ exit ' + result.exitCode + '\n') + (output || '(no output)');
+            }
+            area.appendChild(div);
+            area.scrollTop = area.scrollHeight;
+        });
+
+        // ── v3.6 Feature 4: Git Context ──────────────────────
+        ipcRenderer.on('git-context', (ev, data) => {
+            const area = document.getElementById('chat');
+            const div = document.createElement('div');
+            div.className = 'code-output ' + (data.error ? 'error' : 'success');
+            if (data.error) {
+                div.textContent = '📁 Git: ' + data.error;
+            } else {
+                div.textContent = `📁 ${data.repo}\n📄 ${data.file}\n\n${data.status}\n\n${data.diff}`;
+                // Also inject into context
+                const input = document.getElementById('cmd');
+                if (input) {
+                    input.value = (input.value ? input.value + '\n\n' : '') +
+                        '[Git Diff]\n```\n' + data.diff.substring(0, 3000) + '\n```';
+                }
+            }
+            area.appendChild(div);
+            area.scrollTop = area.scrollHeight;
+        });
+
+        // ── v3.6 Feature 5: Session Stats ────────────────────
+        ipcRenderer.on('session-stats', (ev, stats) => {
+            const area = document.getElementById('chat');
+            const div = document.createElement('div');
+            div.className = 'code-output success';
+            let text = `📊 Session Stats — ${stats.date}\n`;
+            text += `Messages: ${stats.messages} | Sessions: ${stats.sessionsToday}\n`;
+            text += `\nModel Usage:\n`;
+            for (const [m, c] of Object.entries(stats.modelUsage || {})) {
+                text += `  ${m}: ${c} msgs\n`;
+            }
+            if (Object.keys(stats.actionUsage || {}).length > 0) {
+                text += `\nAction Usage:\n`;
+                for (const [a, c] of Object.entries(stats.actionUsage)) {
+                    text += `  ${a}: ${c}x\n`;
+                }
+            }
+            div.textContent = text;
+            area.appendChild(div);
+            area.scrollTop = area.scrollHeight;
+        });
+
+        // ── v3.6 Feature 6: Multi-Model Compare ─────────────
+        ipcRenderer.on('compare-chunk', (ev, { idx, chunk }) => {
+            let panel = document.getElementById('compare-panel-' + idx);
+            if (!panel) {
+                // Create compare container on first chunk
+                let container = document.getElementById('compare-container');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.id = 'compare-container';
+                    container.className = 'compare-container';
+                    document.getElementById('chat').appendChild(container);
+                }
+                panel = document.createElement('div');
+                panel.id = 'compare-panel-' + idx;
+                panel.className = 'compare-panel';
+                panel.innerHTML = '<div class="label">Model ' + (idx + 1) + '</div>';
+                container.appendChild(panel);
+            }
+            panel.innerHTML += escapeHtml(chunk);
+        });
+        ipcRenderer.on('compare-done', (ev, { idx, model }) => {
+            const panel = document.getElementById('compare-panel-' + idx);
+            if (panel) {
+                panel.querySelector('.label').textContent = model;
+            }
+        });
+
+        // ── v3.6 Feature 7: Image OCR ────────────────────────
+        ipcRenderer.on('ocr-result', (ev, result) => {
+            if (result.error) {
+                const div = document.createElement('div');
+                div.className = 'msg';
+                div.innerHTML = `<div class="msg-assistant" style="color:#ef4444">🔍 OCR failed: ${escapeHtml(result.error)}</div>`;
+                chatArea.appendChild(div);
+                chatArea.scrollTop = chatArea.scrollHeight;
+                return;
+            }
+            const text = result.text;
+            // Inject into currentContext so next LLM message includes it
+            currentContext = currentContext ? currentContext + '\n---\n' + text : text;
+            const display = currentContext.length > 300 ? currentContext.substring(0, 300) + '…' : currentContext;
+            contextBox.textContent = display;
+            contextBox.style.color = '#d4d4d8';
+            updateCtxChars();
+
+            // Show OCR output in chat with a Q&A hint
+            const div = document.createElement('div');
+            div.className = 'msg';
+            div.innerHTML = `
+                <div class="msg-user"><strong>OCR Scan</strong></div>
+                <div class="msg-assistant" style="font-family:'JetBrains Mono',monospace;font-size:11px;white-space:pre-wrap;opacity:0.85">${escapeHtml(text)}</div>
+                <div class="msg-assistant" style="font-size:10px;color:#475569;margin-top:4px">📌 Context loaded — ask a question about this image</div>`;
+            chatArea.appendChild(div);
+            chatArea.scrollTop = chatArea.scrollHeight;
+
+            // Pre-focus the input so user can type right away
+            cmdInput.focus();
+        });
+    </script>
+</body>
+
+</html>

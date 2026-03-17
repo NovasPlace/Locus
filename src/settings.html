@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Locus — Settings</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0e14;
+            color: #c5cad3;
+            font-family: -apple-system, 'Segoe UI', 'Inter', sans-serif;
+            font-size: 13px;
+            overflow: hidden;
+            user-select: none;
+            -webkit-app-region: drag;
+        }
+
+        /* ── Title Bar ── */
+        .titlebar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            background: #0d1117;
+            border-bottom: 1px solid #1e2a38;
+        }
+
+        .titlebar h1 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e6edf3;
+            letter-spacing: 0.02em;
+        }
+
+        .titlebar .close-btn {
+            -webkit-app-region: no-drag;
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: transparent;
+            color: #666;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .titlebar .close-btn:hover {
+            background: #1e2a38;
+            color: #e6edf3;
+        }
+
+        /* ── Tabs ── */
+        .tabs {
+            display: flex;
+            gap: 0;
+            background: #0d1117;
+            border-bottom: 1px solid #1e2a38;
+            -webkit-app-region: no-drag;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            color: #666;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.15s;
+        }
+
+        .tab:hover {
+            color: #c5cad3;
+        }
+
+        .tab.active {
+            color: #00c9ff;
+            border-bottom-color: #00c9ff;
+        }
+
+        /* ── Content ── */
+        .content {
+            padding: 20px;
+            height: calc(100vh - 100px);
+            overflow-y: auto;
+            -webkit-app-region: no-drag;
+        }
+
+        .panel {
+            display: none;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        /* ── Form Elements ── */
+        .field {
+            margin-bottom: 18px;
+        }
+
+        .field label {
+            display: block;
+            color: #8b949e;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+        }
+
+        .field input[type="text"],
+        .field input[type="password"],
+        .field select {
+            width: 100%;
+            padding: 8px 12px;
+            background: #141920;
+            border: 1px solid #1e2a38;
+            border-radius: 6px;
+            color: #e6edf3;
+            font-size: 13px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .field input:focus,
+        .field select:focus {
+            border-color: #00c9ff;
+        }
+
+        .field .hint {
+            color: #555;
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        /* ── Key Input Group ── */
+        .key-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .key-group input {
+            flex: 1;
+        }
+
+        .key-group .toggle-vis {
+            padding: 8px 12px;
+            background: #141920;
+            border: 1px solid #1e2a38;
+            border-radius: 6px;
+            color: #8b949e;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .key-group .toggle-vis:hover {
+            border-color: #00c9ff;
+            color: #e6edf3;
+        }
+
+        /* ── Buttons ── */
+        .btn {
+            padding: 8px 16px;
+            border: 1px solid #1e2a38;
+            border-radius: 6px;
+            background: #141920;
+            color: #c5cad3;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn:hover {
+            border-color: #00c9ff;
+            color: #e6edf3;
+        }
+
+        .btn.primary {
+            background: #00c9ff;
+            border-color: #00c9ff;
+            color: #0a0e14;
+            font-weight: 600;
+        }
+
+        .btn.primary:hover {
+            background: #33d4ff;
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* ── Status ── */
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+
+        .status .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #333;
+        }
+
+        .status .dot.ok {
+            background: #2ecc71;
+        }
+
+        .status .dot.err {
+            background: #e74c3c;
+        }
+
+        .status .dot.loading {
+            background: #f39c12;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        /* ── Toggle ── */
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #1e2a38;
+        }
+
+        .toggle-row:last-child {
+            border-bottom: none;
+        }
+
+        .toggle-row .label {
+            color: #c5cad3;
+            font-size: 13px;
+        }
+
+        .toggle-row .sublabel {
+            color: #555;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+
+        .toggle {
+            position: relative;
+            width: 40px;
+            height: 22px;
+        }
+
+        .toggle input {
+            display: none;
+        }
+
+        .toggle .slider {
+            position: absolute;
+            inset: 0;
+            background: #1e2a38;
+            border-radius: 11px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .toggle .slider::before {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            left: 3px;
+            top: 3px;
+            background: #666;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+
+        .toggle input:checked+.slider {
+            background: #00c9ff;
+        }
+
+        .toggle input:checked+.slider::before {
+            left: 21px;
+            background: #0a0e14;
+        }
+
+        /* ── Footer ── */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 12px 20px;
+            background: #0d1117;
+            border-top: 1px solid #1e2a38;
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            -webkit-app-region: no-drag;
+        }
+
+        /* ── Hotkey Capture ── */
+        .hotkey-display {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            background: #141920;
+            border: 1px solid #1e2a38;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 13px;
+            color: #00c9ff;
+            min-width: 120px;
+            cursor: pointer;
+        }
+
+        .hotkey-display.capturing {
+            border-color: #f39c12;
+            color: #f39c12;
+            animation: pulse 0.8s infinite;
+        }
+
+        /* ── Shortcut Grid ── */
+        .shortcut-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .shortcut-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-radius: 6px;
+        }
+
+        .shortcut-row:nth-child(odd) {
+            background: #0d1117;
+        }
+
+        .shortcut-row .desc {
+            color: #c5cad3;
+            font-size: 13px;
+        }
+
+        .shortcut-row kbd {
+            display: inline-block;
+            padding: 3px 8px;
+            background: #141920;
+            border: 1px solid #1e2a38;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 11px;
+            color: #00c9ff;
+            white-space: nowrap;
+        }
+
+        /* ── Stats ── */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            padding: 14px;
+            background: #141920;
+            border: 1px solid #1e2a38;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-card .num {
+            font-size: 24px;
+            font-weight: 700;
+            color: #00c9ff;
+            margin-bottom: 4px;
+        }
+
+        .stat-card .lbl {
+            font-size: 11px;
+            color: #8b949e;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="titlebar">
+        <h1>⚙ Settings</h1>
+        <button class="close-btn" onclick="window.close()">✕</button>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" data-tab="provider">Provider</div>
+        <div class="tab" data-tab="general">General</div>
+        <div class="tab" data-tab="shortcuts">Shortcuts</div>
+        <div class="tab" data-tab="blueprint">🔧 Blueprint</div>
+        <div class="tab" data-tab="about">About</div>
+    </div>
+
+    <div class="content">
+        <!-- Provider Tab -->
+        <div class="panel active" id="panel-provider">
+            <div class="field">
+                <label>Provider</label>
+                <select id="provider-select">
+                    <option value="ollama">🏠 Ollama (local)</option>
+                    <option value="openai">🌐 OpenAI</option>
+                    <option value="anthropic">🟣 Anthropic</option>
+                    <option value="nvidia">⚡ NVIDIA NIM</option>
+                </select>
+            </div>
+
+            <div class="field" id="apikey-field" style="display:none">
+                <label>API Key</label>
+                <div class="key-group">
+                    <input type="password" id="api-key" placeholder="Enter your API key">
+                    <button class="toggle-vis" onclick="toggleKeyVis()">👁</button>
+                </div>
+                <div class="hint" id="apikey-hint"></div>
+            </div>
+
+            <div class="field" id="baseurl-field" style="display:none">
+                <label>Base URL</label>
+                <input type="text" id="base-url" placeholder="https://api.openai.com/v1">
+                <div class="hint">Custom endpoint for self-hosted or NVIDIA NIM</div>
+            </div>
+
+            <div class="field">
+                <label>Model</label>
+                <input type="text" id="model-input" placeholder="e.g. llama3.2:latest">
+                <div class="hint" id="model-hint">Type a model name or select from the dropdown after testing</div>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:12px; margin-top:8px">
+                <button class="btn" id="test-btn" onclick="testConnection()">Test Connection</button>
+                <span class="status" id="test-status" style="display:none">
+                    <span class="dot" id="test-dot"></span>
+                    <span id="test-msg"></span>
+                </span>
+            </div>
+        </div>
+
+        <!-- General Tab -->
+        <div class="panel" id="panel-general">
+            <div class="field">
+                <label>Activation Hotkey</label>
+                <div class="hotkey-display" id="hotkey-display" onclick="startCapture()">
+                    <span id="hotkey-text">Ctrl+Shift+Space</span>
+                </div>
+                <div class="hint">Click to change, then press your desired key combination</div>
+            </div>
+
+            <div class="field">
+                <label>Activation Mode</label>
+                <select id="activation-mode">
+                    <option value="keyboard">⌨ Keyboard hotkey only</option>
+                    <option value="highlight">✨ Highlight + Dwell (auto)</option>
+                    <option value="8">🖱 Back Button (Button 8)</option>
+                    <option value="9">🖱 Forward Button (Button 9)</option>
+                    <option value="2">🖱 Middle Click (Button 2)</option>
+                </select>
+                <div class="hint">How Locus activates besides the hotkey</div>
+            </div>
+
+            <div style="margin-top: 20px">
+                <div class="toggle-row">
+                    <div>
+                        <div class="label">Start on login</div>
+                        <div class="sublabel">Launch Locus automatically when you log in</div>
+                    </div>
+                    <label class="toggle">
+                        <input type="checkbox" id="autostart-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="toggle-row">
+                    <div>
+                        <div class="label">Highlight activation</div>
+                        <div class="sublabel">Trigger lookup when text is selected</div>
+                    </div>
+                    <label class="toggle">
+                        <input type="checkbox" id="highlight-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="toggle-row">
+                    <div>
+                        <div class="label">Auto-route actions</div>
+                        <div class="sublabel">Automatically choose the best action per selection type</div>
+                    </div>
+                    <label class="toggle">
+                        <input type="checkbox" id="autoroute-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shortcuts Tab -->
+        <div class="panel" id="panel-shortcuts">
+            <div class="shortcut-grid">
+                <div class="shortcut-row">
+                    <span class="desc">Activate Locus</span>
+                    <kbd id="sc-hotkey">Alt+Space</kbd>
+                </div>
+                <div class="shortcut-row">
+                    <span class="desc">Region capture</span>
+                    <kbd>Ctrl+Shift+S</kbd>
+                </div>
+                <div class="shortcut-row">
+                    <span class="desc">Clipboard history</span>
+                    <kbd>Ctrl+Shift+V</kbd>
+                </div>
+                <div class="shortcut-row">
+                    <span class="desc">Pin / unpin overlay</span>
+                    <kbd>📌 Pin button</kbd>
+                </div>
+                <div class="shortcut-row">
+                    <span class="desc">Cycle provider</span>
+                    <kbd>⚡ Provider button</kbd>
+                </div>
+                <div class="shortcut-row">
+                    <span class="desc">Copy response</span>
+                    <kbd>📋 Copy button</kbd>
+                </div>
+                <div class="shortcut-row">
+                    <span class="desc">Apply in place</span>
+                    <kbd>📥 Apply button</kbd>
+                </div>
+                <div class="shortcut-row">
+                    <span class="desc">Export chat</span>
+                    <kbd>💾 Export button</kbd>
+                </div>
+                <div class="shortcut-row">
+                    <span class="desc">New conversation</span>
+                    <kbd>🔄 New button</kbd>
+                </div>
+                <div class="shortcut-row">
+                    <span class="desc">Run code block</span>
+                    <kbd>▶ Run button</kbd>
+                </div>
+            </div>
+        </div>
+
+        <!-- Blueprint Tab -->
+        <div class="panel" id="panel-blueprint">
+            <div class="field">
+                <label>Blueprint Model</label>
+                <input type="text" id="bp-model" placeholder="e.g. llama3.2">
+                <div class="hint">Model used by the Blueprint Engine (Ollama or OpenAI-compatible)</div>
+            </div>
+            <div class="field">
+                <label>API Key <span style="color:#555">(optional — leave blank for local Ollama)</span></label>
+                <div class="key-group">
+                    <input type="password" id="bp-api-key" placeholder="sk-...">
+                    <button class="toggle-vis" onclick="toggleBpKeyVis()">👁</button>
+                </div>
+                <div class="hint">Set this to use a cloud provider for blueprint generation</div>
+            </div>
+        </div>
+
+        <!-- About Tab -->
+        <div class="panel" id="panel-about">
+            <div style="text-align:center; padding:20px">
+                <div style="font-size:48px; margin-bottom:12px">🔍</div>
+                <h2 style="color:#e6edf3; font-size:20px; margin-bottom:4px">Locus</h2>
+                <div style="color:#00c9ff; font-size:13px; margin-bottom:8px">v4.0.0</div>
+                <p style="color:#8b949e; line-height:1.6; max-width:300px; margin:0 auto; font-size:12px">
+                    OS-level AI code reviewer.<br>
+                    Select any text → get staff-engineer analysis.
+                </p>
+            </div>
+
+            <div class="stat-grid" id="stats-grid">
+                <div class="stat-card">
+                    <div class="num" id="stat-lookups">—</div>
+                    <div class="lbl">Lookups today</div>
+                </div>
+                <div class="stat-card">
+                    <div class="num" id="stat-sessions">—</div>
+                    <div class="lbl">Sessions today</div>
+                </div>
+                <div class="stat-card">
+                    <div class="num" id="stat-model">—</div>
+                    <div class="lbl">Top model</div>
+                </div>
+                <div class="stat-card">
+                    <div class="num" id="stat-action">—</div>
+                    <div class="lbl">Top action</div>
+                </div>
+            </div>
+
+            <div style="text-align:center; margin-top:20px; color:#555; font-size:11px">
+                Built by Sovereign Forge · © 2026 Donovan Everitts
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <button class="btn" onclick="window.close()">Cancel</button>
+        <button class="btn primary" onclick="saveSettings()">Save</button>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        // Provider presets
+        const PROVIDER_PRESETS = {
+            ollama: { showKey: false, showUrl: false, hint: '', defaultUrl: 'http://127.0.0.1:11434', providerName: 'ollama' },
+            openai: { showKey: true, showUrl: false, hint: 'Get your key at platform.openai.com', defaultUrl: 'https://api.openai.com/v1', providerName: 'openai' },
+            anthropic: { showKey: true, showUrl: false, hint: 'Get your key at console.anthropic.com', defaultUrl: 'https://api.anthropic.com', providerName: 'anthropic' },
+            nvidia: { showKey: true, showUrl: true, hint: 'Get your key at build.nvidia.com', defaultUrl: 'https://integrate.api.nvidia.com/v1', providerName: 'openai' },
+        };
+
+        let config = {};
+        let capturing = false;
+
+        // ── Load config from main process ──
+        ipcRenderer.invoke('get-config').then(cfg => {
+            config = cfg;
+            populateForm();
+        });
+
+        // Load session stats
+        ipcRenderer.invoke('get-session-stats').then(stats => {
+            document.getElementById('stat-lookups').textContent = stats.messages || 0;
+            document.getElementById('stat-sessions').textContent = stats.sessionsToday || 0;
+
+            // Top model
+            const models = stats.modelUsage || {};
+            const topModel = Object.entries(models).sort((a, b) => b[1] - a[1])[0];
+            if (topModel) {
+                // Shorten long model names
+                let name = topModel[0];
+                if (name.length > 12) name = name.split('/').pop().split(':')[0];
+                document.getElementById('stat-model').textContent = name;
+            }
+
+            // Top action
+            const actions = stats.actionUsage || {};
+            const topAction = Object.entries(actions).sort((a, b) => b[1] - a[1])[0];
+            if (topAction) {
+                document.getElementById('stat-action').textContent = topAction[0];
+            }
+        }).catch(() => { });
+
+        function populateForm() {
+            // Determine display provider (nvidia is openai with nvidia url)
+            let displayProvider = config.provider || 'ollama';
+            const openaiUrl = (config.providers?.openai?.baseUrl || '').toLowerCase();
+            if (displayProvider === 'openai' && openaiUrl.includes('nvidia')) {
+                displayProvider = 'nvidia';
+            }
+
+            document.getElementById('provider-select').value = displayProvider;
+            updateProviderUI(displayProvider);
+
+            // API key
+            const providerName = PROVIDER_PRESETS[displayProvider]?.providerName || displayProvider;
+            const providerOpts = config.providers?.[providerName] || {};
+            document.getElementById('api-key').value = providerOpts.apiKey || '';
+            document.getElementById('base-url').value = providerOpts.baseUrl || '';
+            document.getElementById('model-input').value = config.model || '';
+
+            // General
+            document.getElementById('hotkey-text').textContent = config.hotkey || 'Ctrl+Shift+Space';
+            document.getElementById('sc-hotkey').textContent = config.hotkey || 'Ctrl+Shift+Space';
+            document.getElementById('highlight-toggle').checked = config.highlightActivation !== false;
+            document.getElementById('autoroute-toggle').checked = config.autoRoute !== false;
+
+            // Activation mode
+            if (config.mouseButton) {
+                document.getElementById('activation-mode').value = String(config.mouseButton);
+            } else if (config.highlightActivation) {
+                document.getElementById('activation-mode').value = 'highlight';
+            } else {
+                document.getElementById('activation-mode').value = 'keyboard';
+            }
+
+            // Autostart
+            ipcRenderer.invoke('get-autostart').then(v => {
+                document.getElementById('autostart-toggle').checked = v;
+            });
+            // Blueprint Engine
+            const be = config.blueprintEngine || {};
+            document.getElementById('bp-model').value = be.model || 'llama3.2';
+            document.getElementById('bp-api-key').value = be.apiKey || '';
+        }
+
+        function updateProviderUI(provider) {
+            const preset = PROVIDER_PRESETS[provider] || PROVIDER_PRESETS.ollama;
+            document.getElementById('apikey-field').style.display = preset.showKey ? 'block' : 'none';
+            document.getElementById('baseurl-field').style.display = preset.showUrl ? 'block' : 'none';
+            document.getElementById('apikey-hint').textContent = preset.hint;
+
+            if (preset.defaultUrl && !document.getElementById('base-url').value) {
+                document.getElementById('base-url').value = preset.defaultUrl;
+            }
+        }
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Provider change
+        document.getElementById('provider-select').addEventListener('change', (e) => {
+            const provider = e.target.value;
+            updateProviderUI(provider);
+
+            // Set default base URL for NVIDIA
+            const preset = PROVIDER_PRESETS[provider];
+            if (preset.defaultUrl) {
+                document.getElementById('base-url').value = preset.defaultUrl;
+            }
+        });
+
+        // Toggle key visibility
+        function toggleKeyVis() {
+            const input = document.getElementById('api-key');
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        function toggleBpKeyVis() {
+            const input = document.getElementById('bp-api-key');
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        // Test connection
+        async function testConnection() {
+            const btn = document.getElementById('test-btn');
+            const status = document.getElementById('test-status');
+            const dot = document.getElementById('test-dot');
+            const msg = document.getElementById('test-msg');
+
+            btn.disabled = true;
+            status.style.display = 'inline-flex';
+            dot.className = 'dot loading';
+            msg.textContent = 'Testing...';
+
+            const settings = gatherSettings();
+            try {
+                const result = await ipcRenderer.invoke('test-provider', settings);
+                if (result.ok) {
+                    dot.className = 'dot ok';
+                    msg.textContent = result.message || 'Connected';
+                } else {
+                    dot.className = 'dot err';
+                    msg.textContent = result.message || 'Failed';
+                }
+            } catch (e) {
+                dot.className = 'dot err';
+                msg.textContent = e.message;
+            }
+            btn.disabled = false;
+        }
+
+        // Hotkey capture
+        function startCapture() {
+            capturing = true;
+            const display = document.getElementById('hotkey-display');
+            display.classList.add('capturing');
+            document.getElementById('hotkey-text').textContent = 'Press keys...';
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (!capturing) return;
+            e.preventDefault();
+
+            const parts = [];
+            if (e.ctrlKey) parts.push('Ctrl');
+            if (e.altKey) parts.push('Alt');
+            if (e.shiftKey) parts.push('Shift');
+            if (e.metaKey) parts.push('Super');
+
+            const key = e.key;
+            if (!['Control', 'Alt', 'Shift', 'Meta'].includes(key)) {
+                parts.push(key === ' ' ? 'Space' : key.length === 1 ? key.toUpperCase() : key);
+                capturing = false;
+                document.getElementById('hotkey-display').classList.remove('capturing');
+                document.getElementById('hotkey-text').textContent = parts.join('+');
+            }
+        });
+
+        // Gather settings
+        function gatherSettings() {
+            const displayProvider = document.getElementById('provider-select').value;
+            const preset = PROVIDER_PRESETS[displayProvider];
+            const providerName = preset.providerName;
+
+            const apiKey = document.getElementById('api-key').value.trim();
+            const baseUrl = document.getElementById('base-url').value.trim();
+            const model = document.getElementById('model-input').value.trim();
+
+            const providers = { ...(config.providers || {}) };
+            if (providerName !== 'ollama') {
+                providers[providerName] = providers[providerName] || {};
+                if (apiKey) providers[providerName].apiKey = apiKey;
+                if (baseUrl) providers[providerName].baseUrl = baseUrl;
+                providers[providerName].timeoutMs = 30000;
+            }
+
+            const activationMode = document.getElementById('activation-mode').value;
+            let mouseButton = null;
+            let highlightActivation = document.getElementById('highlight-toggle').checked;
+            if (activationMode === 'highlight') {
+                highlightActivation = true;
+            } else if (activationMode === 'keyboard') {
+                highlightActivation = document.getElementById('highlight-toggle').checked;
+            } else {
+                mouseButton = parseInt(activationMode, 10);
+            }
+
+            const hotkeyText = document.getElementById('hotkey-text').textContent;
+            const safeHotkey = (hotkeyText && !hotkeyText.includes('Press')) ? hotkeyText : (config.hotkey || 'Alt+Space');
+
+            return {
+                provider: providerName,
+                model: model || config.model || 'llama3.2:latest',
+                hotkey: safeHotkey,
+                highlightActivation: highlightActivation,
+                autoRoute: document.getElementById('autoroute-toggle').checked,
+                mouseButton: mouseButton,
+                providers: providers,
+                autostart: document.getElementById('autostart-toggle').checked,
+                blueprintEngine: {
+                    ...(config.blueprintEngine || {}),
+                    model: document.getElementById('bp-model').value.trim() || 'llama3.2',
+                    apiKey: document.getElementById('bp-api-key').value.trim(),
+                },
+            };
+        }
+
+        // Save
+        function saveSettings() {
+            const settings = gatherSettings();
+            ipcRenderer.invoke('save-settings', settings).then(() => {
+                window.close();
+            });
+        }
+    </script>
+</body>
+
+</html>

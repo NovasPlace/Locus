@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #1a1a1e;
+            color: #d4d4d8;
+            padding: 20px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h2 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #10a37f;
+        }
+
+        label {
+            font-size: 11px;
+            color: #71717a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            background: #09090b;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 5px;
+            color: #d4d4d8;
+            font-family: inherit;
+            font-size: 13px;
+            padding: 8px 10px;
+            margin-bottom: 12px;
+            outline: none;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            border-color: #10a37f;
+        }
+
+        textarea {
+            resize: none;
+            height: 60px;
+        }
+
+        select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2371717a'%3E%3Cpath d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+        }
+
+        .presets {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .preset {
+            background: rgba(16, 163, 127, 0.1);
+            border: 1px solid rgba(16, 163, 127, 0.25);
+            color: #10a37f;
+            padding: 4px 10px;
+            font-size: 11px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+
+        .preset:hover {
+            background: rgba(16, 163, 127, 0.25);
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: auto;
+        }
+
+        .btn {
+            padding: 8px 20px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-cancel {
+            background: rgba(255, 255, 255, 0.06);
+            color: #71717a;
+        }
+
+        .btn-cancel:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-save {
+            background: #10a37f;
+            color: #fff;
+        }
+
+        .btn-save:hover {
+            background: #0d8c6d;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>New Custom Action</h2>
+
+    <label>Presets</label>
+    <div class="presets">
+        <button class="preset" data-label="ELI5" data-prompt="Explain this like I am 5 years old">ELI5</button>
+        <button class="preset" data-label="Formal"
+            data-prompt="Rewrite this in a formal professional tone">Formal</button>
+        <button class="preset" data-label="Debug"
+            data-prompt="Find bugs and potential issues in this code">Debug</button>
+        <button class="preset" data-label="Pros/Cons" data-prompt="List the pros and cons of this">Pros/Cons</button>
+        <button class="preset" data-label="TL;DR" data-prompt="Give a one-sentence TL;DR of this">TL;DR</button>
+        <button class="preset" data-label="Roast"
+            data-prompt="Critically analyze and point out all weaknesses in this">Roast</button>
+    </div>
+
+    <label>Label (shown on toolbar button)</label>
+    <input type="text" id="label" placeholder="e.g. ELI5, Formal, My Style" maxlength="12" autofocus />
+
+    <label>Prompt (sent to the model with your highlighted text)</label>
+    <textarea id="prompt" placeholder="e.g. Rewrite this in a casual, friendly tone"></textarea>
+
+    <label>Show when</label>
+    <select id="type">
+        <option value="all">All content</option>
+        <option value="code">Code only</option>
+        <option value="text">Text only</option>
+        <option value="error">Errors only</option>
+    </select>
+
+    <div class="btn-row">
+        <button class="btn btn-cancel" id="cancel">Cancel</button>
+        <button class="btn btn-save" id="save">Save Action</button>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        // Preset buttons fill in the fields
+        document.querySelectorAll('.preset').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('label').value = btn.dataset.label;
+                document.getElementById('prompt').value = btn.dataset.prompt;
+            });
+        });
+
+        document.getElementById('cancel').addEventListener('click', () => {
+            ipcRenderer.send('custom-action-cancel');
+        });
+
+        document.getElementById('save').addEventListener('click', () => {
+            const label = document.getElementById('label').value.trim();
+            const prompt = document.getElementById('prompt').value.trim();
+            const type = document.getElementById('type').value;
+
+            if (!label || !prompt) return;
+
+            ipcRenderer.send('custom-action-save', { label, prompt, type });
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') ipcRenderer.send('custom-action-cancel');
+            if (e.key === 'Enter' && e.ctrlKey) document.getElementById('save').click();
+        });
+    </script>
+</body>
+
+</html>

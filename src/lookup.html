@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: auto;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: rgba(14, 14, 16, 0.96);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(16px);
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+            padding: 10px 13px;
+            color: #d4d4d8;
+            font-size: 12px;
+            line-height: 1.5;
+            overflow: hidden;
+            animation: fadeIn 0.12s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(4px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ── Shared header ── */
+        .header-row {
+            display: flex;
+            align-items: baseline;
+            gap: 0;
+            margin-bottom: 6px;
+        }
+
+        .source-badge {
+            margin-left: auto;
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.18);
+            letter-spacing: 0.04em;
+            align-self: center;
+        }
+
+        /* ── Audio button ── */
+        .audio-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            margin-left: 6px;
+            background: rgba(16, 163, 127, 0.12);
+            border: 1px solid rgba(16, 163, 127, 0.25);
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 9px;
+            color: #10a37f;
+            flex-shrink: 0;
+            align-self: center;
+            transition: background 0.15s, transform 0.1s;
+            user-select: none;
+        }
+
+        .audio-btn:hover {
+            background: rgba(16, 163, 127, 0.25);
+        }
+
+        .audio-btn:active {
+            transform: scale(0.9);
+        }
+
+        .audio-btn.playing {
+            color: #FFB43C;
+            border-color: rgba(255, 180, 60, 0.4);
+            animation: pulse-btn 0.6s infinite alternate;
+        }
+
+        @keyframes pulse-btn {
+            from {
+                opacity: 0.6;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* ── Dictionary layout ── */
+        .dict-word {
+            color: #e4e4e7;
+            font-weight: 700;
+            font-size: 13px;
+            letter-spacing: 0.01em;
+        }
+
+        .dict-phonetic {
+            color: rgba(255, 255, 255, 0.28);
+            font-size: 11px;
+            margin-left: 5px;
+            font-style: italic;
+        }
+
+        .dict-badge {
+            display: inline-block;
+            background: rgba(16, 163, 127, 0.15);
+            border: 1px solid rgba(16, 163, 127, 0.3);
+            color: #10a37f;
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            padding: 1px 5px;
+            border-radius: 3px;
+            margin-right: 6px;
+            margin-bottom: 3px;
+        }
+
+        .dict-def {
+            color: #a1a1aa;
+            font-size: 11px;
+            line-height: 1.5;
+            margin-bottom: 2px;
+        }
+
+        .dict-example {
+            color: rgba(255, 255, 255, 0.22);
+            font-size: 10px;
+            font-style: italic;
+            margin-top: 2px;
+            margin-bottom: 5px;
+            padding-left: 8px;
+            border-left: 2px solid rgba(16, 163, 127, 0.22);
+        }
+
+        .dict-divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.06);
+            margin: 5px 0;
+        }
+
+        /* ── Thesaurus chips ── */
+        .chips-label {
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.25);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            margin-top: 7px;
+            margin-bottom: 3px;
+        }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-bottom: 4px;
+        }
+
+        .chip {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1px 7px;
+            font-size: 10px;
+            color: #a1a1aa;
+            cursor: pointer;
+            transition: background 0.12s;
+            user-select: none;
+        }
+
+        .chip:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e4e4e7;
+        }
+
+        .chip.ant {
+            border-color: rgba(255, 90, 90, 0.25);
+            color: rgba(255, 130, 130, 0.8);
+        }
+
+        .chip.ant:hover {
+            background: rgba(255, 90, 90, 0.08);
+        }
+
+        /* ── Wikipedia layout ── */
+        .wiki-title {
+            color: #e4e4e7;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .wiki-desc {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 10px;
+            margin-bottom: 5px;
+            font-style: italic;
+        }
+
+        .wiki-extract {
+            color: #a1a1aa;
+            font-size: 11px;
+            line-height: 1.55;
+        }
+
+        .wiki-badge {
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.18);
+            letter-spacing: 0.04em;
+            margin-left: auto;
+            align-self: center;
+        }
+
+        /* ── LLM streaming layout ── */
+        .llm-section {
+            /* container so we can hide/show as a unit */
+        }
+
+        .term {
+            color: #10a37f;
+            font-weight: 600;
+            font-size: 11px;
+            margin-bottom: 4px;
+        }
+
+        .definition {
+            color: #a1a1aa;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .streaming-dot {
+            display: inline-block;
+            width: 4px;
+            height: 4px;
+            background: #10a37f;
+            border-radius: 50%;
+            animation: pulse 0.8s infinite alternate;
+            vertical-align: middle;
+            margin-left: 3px;
+        }
+
+        @keyframes pulse {
+            from {
+                opacity: 0.3;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- LLM mode (hidden when dict/wiki is active) -->
+    <div id="llm-section">
+        <div class="term" id="term"></div>
+        <div class="definition" id="definition"></div>
+    </div>
+    <!-- Dictionary / Wikipedia mode (hidden when LLM is active) -->
+    <div id="dict-root"></div>
+    <!-- Hidden audio player -->
+    <audio id="audio-player" style="display:none;"></audio>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        const llmSection = document.getElementById('llm-section');
+        const dictRoot = document.getElementById('dict-root');
+        const player = document.getElementById('audio-player');
+
+        // Track current auto-dismiss timer so we can cancel on re-lookup
+        let autoDismissTimer = null;
+
+        function clearAutoDismiss() {
+            if (autoDismissTimer) { clearTimeout(autoDismissTimer); autoDismissTimer = null; }
+        }
+
+        function setAutoDismiss(ms) {
+            clearAutoDismiss();
+            autoDismissTimer = setTimeout(() => ipcRenderer.send('lookup-dismiss'), ms);
+        }
+
+        // Measure content height post-paint and signal main to resize + show.
+        // Bug fix: use setTimeout instead of requestAnimationFrame — Electron
+        // throttles rAF in hidden windows, so the second lookup call would
+        // never send lookup-painted and the window would never show.
+        function signalPainted() {
+            setTimeout(() => {
+                ipcRenderer.send('lookup-painted', document.body.scrollHeight);
+            }, 0);
+        }
+
+        // Activate LLM mode: show LLM section, hide dict
+        function showLlm() {
+            llmSection.style.display = 'block';
+            dictRoot.style.display = 'none';
+        }
+
+        // Activate dict/wiki mode: show dict section, hide LLM
+        function showDict() {
+            llmSection.style.display = 'none';
+            dictRoot.style.display = 'block';
+        }
+
+        // Wipe all content, stop audio, and ACK
+        ipcRenderer.on('lookup-clear', () => {
+            clearAutoDismiss();
+            document.getElementById('term').textContent = '';
+            document.getElementById('definition').innerHTML = '';
+            dictRoot.innerHTML = '';
+            player.pause();
+            player.removeAttribute('src');
+            // Reset to neutral — both visible, no stale content
+            llmSection.style.display = 'block';
+            dictRoot.style.display = 'block';
+            ipcRenderer.send('lookup-ready');
+        });
+
+        // ── LLM streaming ──
+        ipcRenderer.on('lookup-term', (event, term) => {
+            chunkCount = 0;  // reset for new lookup
+            showLlm();
+            document.getElementById('term').textContent = term;
+            document.getElementById('definition').innerHTML = '<span class="streaming-dot"></span>';
+            signalPainted();  // Feature 2: show window immediately with term label
+        });
+
+        let chunkCount = 0;
+        ipcRenderer.on('lookup-chunk', (event, chunk) => {
+            const def = document.getElementById('definition');
+            const dot = def.querySelector('.streaming-dot');
+            if (dot) dot.remove();
+            def.textContent += chunk;
+            // Feature 2: resize window every 3rd chunk as content grows
+            chunkCount++;
+            if (chunkCount % 3 === 0) signalPainted();
+        });
+
+        ipcRenderer.on('lookup-done', () => {
+            signalPainted();
+            setAutoDismiss(6000);
+        });
+
+        ipcRenderer.on('lookup-error', (event, err) => {
+            document.getElementById('definition').textContent = err;
+            signalPainted();
+        });
+
+        // ── Dictionary ──
+        ipcRenderer.on('lookup-dict', (event, entry) => {
+            showDict();
+            let html = '';
+
+            // Header: word + phonetic + audio button + source badge
+            html += `<div class="header-row">
+                <span class="dict-word">${esc(entry.word)}</span>
+                ${entry.phonetic ? `<span class="dict-phonetic">${esc(entry.phonetic)}</span>` : ''}
+                ${entry.audioUrl ? `<span class="audio-btn" id="audio-btn" title="Pronounce">▶</span>` : ''}
+                <span class="source-badge">dictionary</span>
+            </div>`;
+
+            // Meanings
+            entry.meanings.forEach((m, mi) => {
+                if (mi > 0) html += '<div class="dict-divider"></div>';
+                html += `<span class="dict-badge">${esc(m.pos)}</span>`;
+                m.defs.forEach(d => {
+                    html += `<div class="dict-def">${esc(d.def)}</div>`;
+                    if (d.ex) html += `<div class="dict-example">${esc(d.ex)}</div>`;
+                });
+            });
+
+            // Synonyms
+            if (entry.synonyms && entry.synonyms.length > 0) {
+                html += '<div class="chips-label">synonyms</div><div class="chips">';
+                entry.synonyms.forEach(s => {
+                    html += `<span class="chip" title="Look up &quot;${esc(s)}&quot;">${esc(s)}</span>`;
+                });
+                html += '</div>';
+            }
+
+            // Antonyms
+            if (entry.antonyms && entry.antonyms.length > 0) {
+                html += '<div class="chips-label">antonyms</div><div class="chips">';
+                entry.antonyms.forEach(a => {
+                    html += `<span class="chip ant" title="Look up &quot;${esc(a)}&quot;">${esc(a)}</span>`;
+                });
+                html += '</div>';
+            }
+
+            dictRoot.innerHTML = html;
+
+            // Wire audio — stop previous, reset listeners to prevent stacking (Bug #1)
+            player.pause();
+            player.removeAttribute('src');
+            player.onended = null;
+            if (entry.audioUrl) {
+                const btn = document.getElementById('audio-btn');
+                if (btn) {
+                    player.src = entry.audioUrl;
+                    player.onended = () => btn.classList.remove('playing');
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        btn.classList.add('playing');
+                        player.currentTime = 0;
+                        player.play().catch(() => btn.classList.remove('playing'));
+                    });
+                }
+            }
+
+            // Wire synonym/antonym chips (Bug #2 fix: stopPropagation prevents body click dismiss)
+            dictRoot.querySelectorAll('.chip').forEach(chip => {
+                chip.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    ipcRenderer.send('lookup-word', chip.textContent);
+                });
+            });
+
+            signalPainted();
+            setAutoDismiss(10000);
+        });
+
+        // ── Wikipedia ──
+        ipcRenderer.on('lookup-wiki', (event, wiki) => {
+            showDict();
+            dictRoot.innerHTML = `
+                <div class="header-row">
+                    <span class="wiki-title">${esc(wiki.title)}</span>
+                    <span class="wiki-badge">wikipedia</span>
+                </div>
+                ${wiki.description ? `<div class="wiki-desc">${esc(wiki.description)}</div>` : ''}
+                <div class="wiki-extract">${esc(wiki.extract)}</div>
+            `;
+            signalPainted();
+            setAutoDismiss(10000);
+        });
+
+        function esc(str) {
+            const d = document.createElement('div');
+            d.textContent = str || '';
+            return d.innerHTML;
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') ipcRenderer.send('lookup-dismiss');
+        });
+
+        document.addEventListener('click', () => {
+            ipcRenderer.send('lookup-dismiss');
+        });
+    </script>
+</body>
+
+</html>

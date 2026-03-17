@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Teach Me</title>
+    <style>
+        :root {
+            --navy: #0a0f1e;
+            --navy-light: #0d1428;
+            --navy-card: #111827;
+            --teal: #14b8a6;
+            --teal-dim: rgba(20, 184, 166, 0.18);
+            --teal-glow: rgba(20, 184, 166, 0.5);
+            --teal-faint: rgba(20, 184, 166, 0.07);
+            --amber: #f5a623;
+            --amber-glow: rgba(245, 166, 35, 0.4);
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --text-dim: #475569;
+            --border: rgba(20, 184, 166, 0.15);
+            --border-med: rgba(20, 184, 166, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: var(--navy);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 13px;
+            line-height: 1.65;
+        }
+
+        /* Dot grid bg */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: radial-gradient(circle, rgba(20, 184, 166, 0.14) 1px, transparent 1px);
+            background-size: 22px 22px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Hinge swing from left ── */
+        @keyframes hingeOpen {
+            from {
+                transform-origin: left center;
+                transform: perspective(1400px) rotateY(-72deg);
+                opacity: 0;
+            }
+
+            to {
+                transform-origin: left center;
+                transform: perspective(1400px) rotateY(0deg);
+                opacity: 1;
+            }
+        }
+
+        @keyframes hingeClose {
+            from {
+                transform-origin: left center;
+                transform: perspective(1400px) rotateY(0deg);
+                opacity: 1;
+            }
+
+            to {
+                transform-origin: left center;
+                transform: perspective(1400px) rotateY(-72deg);
+                opacity: 0;
+            }
+        }
+
+        .panel {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            transform-origin: left center;
+            animation: hingeOpen 280ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+            z-index: 1;
+        }
+
+        .panel.closing {
+            animation: hingeClose 210ms cubic-bezier(0.55, 0, 0.55, 0.2) forwards;
+        }
+
+        /* ── Teal left connector (from Blueprint) ── */
+        .connector-left {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 3px;
+            height: 100%;
+            background: linear-gradient(180deg,
+                    transparent 0%, var(--teal) 20%,
+                    var(--teal-glow) 50%, var(--teal) 80%, transparent 100%);
+            box-shadow: 0 0 12px var(--teal-glow), 0 0 24px rgba(20, 184, 166, 0.2);
+            z-index: 10;
+        }
+
+        /* ── Amber bottom connector (to Deep Dive below) ── */
+        .connector-bottom {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg,
+                    transparent 0%, rgba(245, 166, 35, 0.2) 20%,
+                    rgba(245, 166, 35, 0.4) 50%, rgba(245, 166, 35, 0.2) 80%, transparent 100%);
+            box-shadow: 0 0 6px rgba(245, 166, 35, 0.15);
+            z-index: 10;
+            transition: box-shadow 0.3s, background 0.3s;
+        }
+
+        .connector-bottom.active {
+            background: linear-gradient(90deg,
+                    transparent 0%, rgba(245, 166, 35, 0.6) 20%,
+                    rgba(245, 166, 35, 1) 50%, rgba(245, 166, 35, 0.6) 80%, transparent 100%);
+            box-shadow: 0 0 12px rgba(245, 166, 35, 0.5), 0 0 24px rgba(245, 166, 35, 0.2);
+        }
+
+        /* Connector pulse */
+        @keyframes connectorPulse {
+            0% {
+                box-shadow: 0 0 12px rgba(245, 166, 35, 0.5);
+            }
+
+            50% {
+                box-shadow: 0 0 28px rgba(245, 166, 35, 0.9), 0 0 48px rgba(245, 166, 35, 0.4);
+            }
+
+            100% {
+                box-shadow: 0 0 12px rgba(245, 166, 35, 0.5);
+            }
+        }
+
+        .connector-bottom.pulse {
+            animation: connectorPulse 400ms ease-out;
+        }
+
+        /* ── Header ── */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 14px 10px 18px;
+            background: rgba(10, 15, 30, 0.9);
+            border-bottom: 1px solid var(--border);
+            -webkit-app-region: drag;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 2;
+        }
+
+        .header-icon {
+            font-size: 15px;
+            filter: drop-shadow(0 0 6px var(--teal-glow));
+        }
+
+        .header-title {
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--teal);
+            letter-spacing: 0.04em;
+            text-shadow: 0 0 10px var(--teal-glow);
+            flex: 1;
+        }
+
+        .close-btn {
+            -webkit-app-region: no-drag;
+            background: none;
+            border: 1px solid rgba(20, 184, 166, 0.2);
+            color: var(--text-muted);
+            width: 22px;
+            height: 22px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .close-btn:hover {
+            background: rgba(248, 81, 73, 0.15);
+            border-color: rgba(248, 81, 73, 0.4);
+            color: #f85149;
+        }
+
+        /* ── Progress ── */
+        .progress-wrap {
+            height: 2px;
+            background: var(--navy-light);
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--teal), rgba(20, 184, 166, 0.4));
+            transition: width 0.4s ease;
+            box-shadow: 0 0 8px var(--teal-glow);
+            position: relative;
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 40px;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5));
+            animation: shimmer 1.2s linear infinite;
+        }
+
+        .progress-bar.done::after {
+            display: none;
+        }
+
+        @keyframes shimmer {
+            from {
+                opacity: 0.3;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* ── Status ── */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 14px 4px 18px;
+            background: var(--navy-light);
+            border-bottom: 1px solid var(--border);
+            font-size: 10px;
+            color: var(--text-dim);
+            flex-shrink: 0;
+        }
+
+        .status-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--teal);
+            animation: pulse 1.5s ease infinite;
+        }
+
+        .status-dot.done {
+            animation: none;
+            background: #3fb950;
+            box-shadow: 0 0 4px rgba(63, 185, 80, 0.6);
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                box-shadow: 0 0 4px var(--teal);
+            }
+
+            50% {
+                opacity: 0.3;
+                box-shadow: none;
+            }
+        }
+
+        /* ── Preview mode (before confirm) ── */
+        .preview-wrap {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            gap: 16px;
+        }
+
+        .preview-label {
+            font-size: 10px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+        }
+
+        .preview-text {
+            background: rgba(20, 184, 166, 0.06);
+            border: 1px solid var(--border-med);
+            border-radius: 8px;
+            padding: 14px 16px;
+            font-size: 12.5px;
+            color: var(--text-muted);
+            max-height: 120px;
+            overflow-y: auto;
+            width: 100%;
+            line-height: 1.6;
+        }
+
+        .mode-card-teach {
+            background: rgba(20, 184, 166, 0.08);
+            border: 1px solid var(--border-med);
+            border-radius: 10px;
+            padding: 14px 18px;
+            text-align: center;
+            width: 100%;
+        }
+
+        .mode-card-teach .icon {
+            font-size: 22px;
+            margin-bottom: 6px;
+        }
+
+        .mode-card-teach .title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--teal);
+            margin-bottom: 3px;
+        }
+
+        .mode-card-teach .desc {
+            font-size: 11px;
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+
+        .confirm-btn {
+            background: rgba(20, 184, 166, 0.15);
+            border: 1px solid var(--teal);
+            color: var(--teal);
+            padding: 8px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            transition: all 0.15s;
+        }
+
+        .confirm-btn:hover {
+            background: rgba(20, 184, 166, 0.3);
+            box-shadow: 0 0 10px var(--teal-glow);
+        }
+
+        /* ── Content / teach output ── */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 18px 16px 18px 22px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(20, 184, 166, 0.3) rgba(0, 0, 0, 0.2);
+        }
+
+        .content::-webkit-scrollbar {
+            width: 7px;
+        }
+
+        .content::-webkit-scrollbar-thumb {
+            background: rgba(20, 184, 166, 0.35);
+            border-radius: 4px;
+        }
+
+        /* Teach markdown styling */
+        .teach h1 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--teal);
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px dashed var(--border-med);
+            letter-spacing: 0.02em;
+        }
+
+        .teach h2 {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--teal);
+            margin-top: 18px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            opacity: 0.85;
+        }
+
+        .teach h3 {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text);
+            margin-top: 12px;
+            margin-bottom: 4px;
+        }
+
+        .teach p {
+            color: var(--text);
+            margin-bottom: 9px;
+            font-size: 12.5px;
+            line-height: 1.7;
+        }
+
+        .teach strong {
+            color: var(--teal);
+            font-weight: 600;
+        }
+
+        .teach em {
+            color: var(--text-muted);
+        }
+
+        .teach ul,
+        .teach ol {
+            padding-left: 18px;
+            margin-bottom: 10px;
+        }
+
+        .teach li {
+            color: var(--text);
+            margin-bottom: 3px;
+            font-size: 12.5px;
+        }
+
+        .teach ul li::marker {
+            content: '◆  ';
+            color: var(--teal);
+            font-size: 7px;
+        }
+
+        .teach code {
+            background: var(--teal-faint);
+            color: var(--teal);
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 11.5px;
+            border: 1px solid var(--border);
+        }
+
+        .teach pre {
+            background: var(--navy-card);
+            border: 1px solid var(--border-med);
+            border-left: 3px solid var(--teal);
+            border-radius: 0 6px 6px 0;
+            padding: 12px 14px;
+            margin: 10px 0 14px;
+            overflow-x: auto;
+        }
+
+        .teach pre code {
+            background: transparent;
+            border: none;
+            padding: 0;
+            color: var(--text);
+            font-size: 12px;
+        }
+
+        .teach blockquote {
+            border-left: 2px solid var(--teal);
+            padding: 6px 12px;
+            margin: 10px 0;
+            background: var(--teal-faint);
+            color: var(--text-muted);
+            font-style: italic;
+            font-size: 12px;
+        }
+
+        .teach hr {
+            border: none;
+            border-top: 1px solid rgba(20, 184, 166, 0.2);
+            margin: 12px 0;
+        }
+
+        /* ── Footer ── */
+        .footer {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px 10px 18px;
+            background: rgba(10, 15, 30, 0.9);
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+            position: relative;
+            z-index: 2;
+            -webkit-app-region: no-drag;
+        }
+
+        .footer-meta {
+            font-size: 9px;
+            color: var(--text-dim);
+            flex: 1;
+        }
+
+        .btn {
+            background: rgba(20, 184, 166, 0.08);
+            border: 1px solid var(--border-med);
+            color: var(--teal);
+            padding: 4px 10px;
+            font-size: 11px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-weight: 500;
+        }
+
+        .btn:hover {
+            background: rgba(20, 184, 166, 0.22);
+            transform: scale(1.04);
+            box-shadow: 0 0 8px var(--teal-glow);
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn.success {
+            color: #3fb950;
+            border-color: rgba(63, 185, 80, 0.4);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="connector-left"></div>
+    <div class="connector-bottom" id="connector-bottom"></div>
+
+    <div class="panel" id="panel">
+        <!-- Header -->
+        <div class="header">
+            <span class="header-icon">📖</span>
+            <span class="header-title">TEACH ME</span>
+            <button class="close-btn" id="btn-close">✕</button>
+        </div>
+
+        <!-- Progress -->
+        <div class="progress-wrap">
+            <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+        </div>
+
+        <!-- Status -->
+        <div class="status-bar" id="status-bar" style="display:none">
+            <div class="status-dot" id="status-dot"></div>
+            <span id="status-text">Thinking…</span>
+        </div>
+
+        <!-- Preview (before confirm) -->
+        <div class="preview-wrap" id="preview-wrap">
+            <div class="mode-card-teach">
+                <div class="icon">📖</div>
+                <div class="title">Teach Me</div>
+                <div class="desc">Plain-language breakdown: What it is, How it works,<br>Why it matters, Real example.
+                </div>
+            </div>
+            <div class="preview-label">Selected context</div>
+            <div class="preview-text" id="preview-text"><i style="color:#475569">Highlight something to get started</i>
+            </div>
+            <button class="confirm-btn" id="btn-confirm">📖 Explain This</button>
+        </div>
+
+        <!-- Teach output -->
+        <div class="content" id="content" style="display:none">
+            <div class="teach" id="teach-output"></div>
+        </div>
+
+        <!-- Footer (shown after generation) -->
+        <div class="footer" id="footer" style="display:none">
+            <span class="footer-meta" id="footer-meta"></span>
+            <button class="btn" id="btn-dive"
+                style="color:#f5a623;border-color:rgba(245,166,35,0.4);background:rgba(245,166,35,0.06)"
+                title="Open Deep Dive below">🔎 Dive</button>
+            <button class="btn" id="btn-copy">📋 Copy</button>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        let currentText = '';
+        let currentTeach = '';
+        let _deepDiveOpen = false;
+
+        // ── Lightweight markdown renderer ────────────────────
+        function renderMarkdown(text) {
+            let codeBlocks = [], out = text;
+            out = out.replace(/```(\w*)\n([\s\S]*?)```/g, (m, lang, code) => {
+                const idx = codeBlocks.length;
+                const esc = code.trim().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                codeBlocks.push(`<pre data-lang="${lang}"><code>${esc}</code></pre>`);
+                return `\x00CB${idx}\x00`;
+            });
+            out = out.replace(/`([^`]+)`/g, (m, c) => `<code>${c.replace(/</g, '&lt;')}</code>`);
+            out = out.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+            out = out.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+            out = out.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+            out = out.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            out = out.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            out = out.replace(/^---$/gm, '<hr>');
+            out = out.replace(/^\s*[-*] (.+)$/gm, '<li>$1</li>');
+            out = out.replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>');
+            out = out.replace(/(<ul>)\s*(<ul>)/g, '$2');
+            out = out.replace(/(<\/ul>)\s*(<\/ul>)/g, '$1');
+            out = out.replace(/^(?!<[hupoli]|<ul|<hr)(.+)$/gm, '<p>$1</p>');
+            out = out.replace(/\x00CB(\d+)\x00/g, (m, i) => codeBlocks[+i]);
+            return out;
+        }
+
+        // ── Preview mode ──────────────────────────────────────
+        ipcRenderer.on('teach-preview', (event, payload) => {
+            const text = typeof payload === 'string' ? payload : payload.text;
+            currentText = text || '';
+            const display = currentText.length > 300 ? currentText.substring(0, 300) + '…' : currentText;
+            document.getElementById('preview-text').textContent = display;
+            document.getElementById('preview-wrap').style.display = 'flex';
+            document.getElementById('content').style.display = 'none';
+            document.getElementById('footer').style.display = 'none';
+        });
+
+        // ── Confirm → start teach ─────────────────────────────
+        document.getElementById('btn-confirm').addEventListener('click', () => {
+            if (!currentText || currentText.trim().length < 5) return;
+            ipcRenderer.send('teach-start', currentText.trim());
+            document.getElementById('preview-wrap').style.display = 'none';
+            document.getElementById('content').style.display = 'flex';
+            document.getElementById('status-bar').style.display = 'flex';
+            document.getElementById('teach-output').innerHTML = '';
+        });
+
+        // ── Progress ──────────────────────────────────────────
+        ipcRenderer.on('bp-progress', (event, { pct, status }) => {
+            const bar = document.getElementById('progress-bar');
+            const dot = document.getElementById('status-dot');
+            const txt = document.getElementById('status-text');
+            bar.style.width = pct + '%';
+            bar.classList.remove('done');
+            dot.classList.remove('done');
+            if (txt) txt.textContent = status || 'Working…';
+        });
+
+        // ── Ready — render full output ────────────────────────
+        ipcRenderer.on('teach-ready', (event, { text }) => {
+            currentTeach = text;
+            const bar = document.getElementById('progress-bar');
+            const dot = document.getElementById('status-dot');
+            const txt = document.getElementById('status-text');
+            bar.style.width = '100%'; bar.classList.add('done');
+            dot.classList.add('done'); if (txt) txt.textContent = 'Complete';
+            document.getElementById('teach-output').innerHTML = renderMarkdown(text);
+            document.getElementById('footer').style.display = 'flex';
+            document.getElementById('footer-meta').textContent = `${text.split(' ').length} words`;
+        });
+
+        ipcRenderer.on('bp-error', (event, msg) => {
+            document.getElementById('teach-output').innerHTML = `<p style="color:#f85149">⚠ ${msg}</p>`;
+        });
+
+        // ── Deep Dive button ──────────────────────────────────
+        const diveBtn = document.getElementById('btn-dive');
+        diveBtn.addEventListener('click', () => {
+            const sel = window.getSelection()?.toString().trim() || '';
+            const text = sel.length > 10 ? sel : currentTeach;
+            if (!text) return;
+
+            const conn = document.getElementById('connector-bottom');
+            conn.classList.add('active');
+
+            // Pulse
+            conn.classList.remove('pulse');
+            void conn.offsetWidth;
+            conn.classList.add('pulse');
+            setTimeout(() => conn.classList.remove('pulse'), 450);
+
+            _deepDiveOpen = !_deepDiveOpen;
+            if (_deepDiveOpen) {
+                ipcRenderer.send('deep-dive-open', { text, source: 'teach' });
+                diveBtn.textContent = '▲ Close Dive';
+            } else {
+                ipcRenderer.send('deep-dive-close');
+                conn.classList.remove('active');
+                diveBtn.textContent = '🔎 Dive';
+            }
+        });
+
+        ipcRenderer.on('deep-dive-closed', () => {
+            _deepDiveOpen = false;
+            document.getElementById('connector-bottom').classList.remove('active');
+            diveBtn.textContent = '🔎 Dive';
+        });
+
+        // ── Copy ──────────────────────────────────────────────
+        document.getElementById('btn-copy').addEventListener('click', () => {
+            const { clipboard } = require('electron');
+            clipboard.writeText(currentTeach);
+            const btn = document.getElementById('btn-copy');
+            btn.textContent = '✓ Copied'; btn.classList.add('success');
+            setTimeout(() => { btn.textContent = '📋 Copy'; btn.classList.remove('success'); }, 2000);
+        });
+
+        // ── Close ─────────────────────────────────────────────
+        document.getElementById('btn-close').addEventListener('click', () => {
+            const panel = document.getElementById('panel');
+            panel.classList.add('closing');
+            setTimeout(() => window.close(), 220);
+        });
+
+        // ── Cascade close IPC ─────────────────────────────────
+        ipcRenderer.on('close-panel', () => {
+            const panel = document.getElementById('panel');
+            panel.classList.add('closing');
+            setTimeout(() => window.close(), 190);
+        });
+    </script>
+</body>
+
+</html>
