@@ -2,7 +2,7 @@
   "name": "locus",
   "version": "4.2.3",
   "description": "OS-level AI code reviewer \u2014 select any text, get staff-engineer analysis",
-  "homepage": "https://github.com/SovereignForge/locus",
+  "homepage": "https://github.com/NovasPlace/Locus",
   "main": "src/main.js",
   "author": {
     "name": "Donovan Everitts",
@@ -53,8 +53,8 @@
     },
     "publish": {
       "provider": "github",
-      "owner": "SovereignForge",
-      "repo": "locus"
+      "owner": "NovasPlace",
+      "repo": "Locus"
     }
   },
   "dependencies": {
