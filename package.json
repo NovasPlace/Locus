@@ -1,7 +1,7 @@
 {
   "name": "locus",
   "version": "4.2.3",
-  "description": "OS-level AI code reviewer \u2014 select any text, get staff-engineer analysis",
+  "description": "OS-level AI code reviewer — select any text, get staff-engineer analysis",
   "homepage": "https://github.com/NovasPlace/Locus",
   "main": "src/main.js",
   "author": {
@@ -43,7 +43,10 @@
       "category": "public.app-category.productivity"
     },
     "win": {
-      "target": "nsis",
+      "target": [
+        "nsis",
+        "portable"
+      ],
       "icon": "build/icon.ico"
     },
     "nsis": {
