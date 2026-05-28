@@ -1,192 +1,169 @@
 # Locus
 
-**OS-level AI overlay.** Highlight any text anywhere on screen — Locus appears at your cursor, ready to fix, explain, rewrite, or chat. No copy-paste, no tab switching.
+**Local-first workspace context layer for AI.**
+
+Locus sits over your desktop so you can capture text, screenshots, notes, code snippets, terminal output, and browser context without copy-paste chaos. Stage messy context, organize it into clean thread memory, then use local or cloud models only when you choose.
 
 ![Locus Overlay](build/icons/256x256.png)
 
 ---
 
-## What it does
+## Download
 
-- **Highlight → invoke** — drag-select any text, Locus pops up at your cursor automatically
-- **Alt+Space** — invoke at cursor without selecting
-- **Chat** — stream responses from your local or cloud LLM
-- **Companion panel** — side panel with tabbed modes
+Windows builds are published from the **GitHub Releases** page.
 
-### Free features (Ollama or your own API key)
+- **Installer:** `Locus Setup.exe`
+- **Portable:** `Locus portable.exe`
 
-| Feature | What it does |
-|---------|-------------|
-| **Fix** | Spots bugs, suggests corrections |
-| **Optimize** | Performance and readability improvements |
-| **Explain** | Plain-language breakdown of any code or text |
-| **Review** | Staff-engineer code review |
-| **Teach Me** | What / How / Why / Example breakdown |
-| **Deep Dive** | Focused technical deep analysis |
-| **Rewrite / Simplify** | Prose and code rewriting |
-| **Summarize** | Condense any selection |
-| **OCR** | Capture a region, extract text, ask about it |
-| **Lookup** | Dictionary + Wikipedia + LLM at double-click speed |
-| **Multi-provider** | Ollama, OpenAI, Anthropic — switch with one click |
-| **Export** | Save conversations as Markdown |
+Download the latest build from:
 
-### Requires Manifesto Engine
+> **Releases:** https://github.com/NovasPlace/Locus/releases
 
-| Feature | What it does |
-|---------|-------------|
-| **Blueprint Printer** | Structured technical breakdown (Problem → Design → Implementation → Risks → Tests) |
-
-> **Blueprint is the only feature that needs Manifesto Engine.** Everything else works
-> with just Ollama running locally — no account, no subscription.
-
-
+If a release does not have assets yet, the workflow may still be building or a release tag has not been pushed.
 
 ---
 
-## Install
+## What Locus does
 
-### Linux (recommended)
+- **Capture workspace context** — highlight text, grab screenshots, capture terminal output, or create notes.
+- **Stage before saving** — use Working Context to amend, clean, and organize context before it becomes memory.
+- **Save to thread memory** — context cards stay attached to persistent threads instead of disappearing into chat history.
+- **Inspect provenance** — keep track of source app, source window, capture type, timestamps, and saved context.
+- **Use quick actions** — ask, explain, summarize, simplify, fix, review, diagnose, rewrite, OCR, and more.
+- **Customize the radial menu** — choose the six actions you want in the quick action wheel.
+- **Use local or cloud models** — route everyday work to local models and reserve cloud models for deeper tasks.
 
-Download the latest `.deb` or `.AppImage` from [Releases](https://github.com/NovasPlace/Locus/releases).
+---
 
-**deb (Ubuntu / Debian / Pop!_OS):**
-```bash
-sudo dpkg -i locus_4.2.2_amd64.deb
-# First launch sets up Python venv + pynput automatically
-locus
+## Core workflow
+
+```text
+Capture context
+  → stage it in Working Context
+  → edit or organize it in Note / Document / Screenshot mode
+  → save it to a Locus thread
+  → search, review, reuse, or send it to a model later
 ```
 
-**AppImage:**
-```bash
-chmod +x Locus-4.2.2.AppImage
-./Locus-4.2.2.AppImage
-```
+The goal is simple:
 
-### Requirements
-
-- **Linux:** X11 display server (Wayland not yet supported for mouse hooks)
-- **Python 3.8+** — auto-detected; used for pynput highlight listener
-- **Ollama** (optional) — for local models: `curl -fsSL https://ollama.ai/install.sh | sh`
+> **Locus gives AI the context you choose, organized the way you want, with receipts for where it came from.**
 
 ---
 
-## First launch
+## Main features
 
-Locus runs a one-time setup in the background on first launch:
-1. Creates a Python venv at `~/.local/share/locus/venv`
-2. Installs `pynput` for highlight activation
-3. Registers autostart entry
+### Working Context
 
-A tray icon appears in your system tray. Locus is ready.
+A temporary staging area for selected text or captured material. You can add more context, ask a quick question, amend the content, or save it into a Locus thread.
 
----
+### Context Cards
 
-## Configuration
+Saved memory units attached to a thread. Cards can represent selected text, screenshots, notes, documents, model results, or other captured context.
 
-Config file: `~/.config/locus/config.json`
+### Companion Panel
 
-```json
-{
-  "provider": "ollama",
-  "model": "llama3.2",
-  "hotkey": "Alt+Space",
-  "highlightActivation": true,
-  "providers": {
-    "openai": { "apiKey": "sk-..." },
-    "anthropic": { "apiKey": "sk-ant-..." }
-  }
-}
-```
+A side panel for deeper work and saved context review. Current directions include context cards, source grouping, timeline view, saved items, and model/action settings.
 
-> **Never put API keys in the config file if you share your machine.** Set `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` environment variables instead — Locus reads them automatically.
+### Screenshot / Document Notes
 
-### Switching providers
+Capture a screenshot, write or edit a note about it, then save the clean note and original screenshot provenance to Locus.
 
-- **Click the model badge** in the overlay header (e.g. `llama3.2`) to cycle providers
-- Or edit `config.json` and restart Locus
+### Radial Action Wheel
 
-### Supported providers
+A configurable quick-action menu that appears near captured context. Pick the actions you actually use.
 
-| Provider | Config key | Auto-detected env var |
-|----------|------------|----------------------|
-| Ollama (local) | `"provider": "ollama"` | — |
-| OpenAI | `"provider": "openai"` | `OPENAI_API_KEY` |
-| Anthropic | `"provider": "anthropic"` | `ANTHROPIC_API_KEY` |
+### Model Routing
+
+Locus is designed around three model tiers:
+
+| Tier | Purpose |
+|---|---|
+| **Quick** | Local, small, private, fast. Good for tags, titles, summaries, cleanup, and simple explanations. |
+| **Standard** | Balanced quality/cost. Good for normal asking, code explanations, and medium context. |
+| **Deep** | Premium/high-quality. Good for architecture, hard debugging, safety review, and final checks. |
+
+Locus should never silently move private local context to a cloud model. Cloud escalation should be explicit.
 
 ---
 
-## Companion Panel
+## Privacy model
 
-The companion panel opens alongside the main overlay (click **⚡ Panels**).
-
-| Tab | What it does |
-|-----|-------------|
-| **Blueprint** | Structured technical breakdown via Manifesto Engine |
-| **Teach Me** | Plain-language What / How / Why / Example |
-| **Deep Dive** | Focused, detailed technical analysis |
-| **Terminal** | Run shell commands without leaving Locus |
-
-**Push context:** Click **→ Panel** to send the current highlighted text into the active panel tab.
+- Locus is local-first.
+- Captured text is not sent to a model until you explicitly run an action.
+- Local models can be used for private/quick work.
+- Cloud providers are optional and should be treated as explicit routing choices.
+- Audit/provenance data should track what was sent, where it went, and which model handled it.
 
 ---
 
-## Keyboard shortcuts
-
-| Shortcut | Action |
-|----------|--------|
-| `Alt+Space` | Invoke Locus at cursor |
-| `Escape` | Dismiss overlay |
-| `Enter` | Send chat message |
-| `Ctrl+Enter` | Send chat message |
-| `Ctrl+1–6` | Quick actions (Fix, Explain, Rewrite, Summarize, Tests, Docs) |
-| `Ctrl+S` | Capture screenshot |
-| `Ctrl+E` | Export conversation as Markdown |
-
----
-
-## Build from source
+## Install from source
 
 ```bash
-git clone https://github.com/NovasPlace/Locus
-cd locus
-npm install
-
-# Run in dev mode
+git clone https://github.com/NovasPlace/Locus.git
+cd Locus
+npm ci
 npm start
+```
 
-# Build packages
-npm run build:linux   # AppImage + .deb
-npm run build:mac     # .dmg
-npm run build:win     # NSIS installer
+Build packages:
+
+```bash
+npm run build:win     # Windows NSIS installer + portable exe
+npm run build:linux   # AppImage + deb
+npm run build:mac     # dmg
 ```
 
 ---
 
-## Architecture
+## Windows releases
 
+Windows release artifacts are built by GitHub Actions when a version tag is pushed.
+
+```bash
+git tag v4.2.4
+git push origin v4.2.4
 ```
+
+The release workflow builds the Windows app and uploads the installer/portable executables to GitHub Releases.
+
+---
+
+## Repository layout
+
+```text
 src/
-├── main.js              — Main process (Electron, IPC, window management)
-├── index.html           — Main overlay UI (context, actions, chat, streaming)
-├── companion-panel.html — Tabbed companion (Blueprint / Teach / Dive / Terminal)
-├── toolbar.html         — Floating action toolbar
-├── lookup.html          — Dictionary + Wikipedia + LLM lookup
-├── platform.js          — Cross-platform abstraction (Linux/Windows)
-├── setup.js             — First-launch bootstrapper (venv, pynput, autostart)
-└── providers/
-    ├── ollama.js        — Local Ollama (streaming)
-    ├── openai.js        — OpenAI-compatible API (streaming)
-    └── anthropic.js     — Anthropic Claude (streaming)
+├── main.js              # Electron main process, IPC, windows, providers
+├── index.html           # Main overlay UI
+├── companion-panel.html # Companion panel UI
+├── quick-panel.html     # Working Context / quick context window
+├── platform.js          # Cross-platform helpers
+├── thread-store.js      # Thread/context persistence
+└── model/               # Model router/provider layer when enabled
 ```
 
 ---
 
-## Privacy
+## Roadmap
 
-- All LLM calls go to your configured provider (local Ollama or cloud API)
-- Locus does **not** send telemetry, crash reports, or usage data anywhere
-- Highlighted text never leaves your machine unless you explicitly send a request
-- CortexDB memory is stored locally in PostgreSQL by default
+Near-term focus:
+
+- First-class thread/context/message data model
+- Unified Context Panel
+- Source-based context grouping
+- Context timeline
+- Smart tagging and filtering
+- Local-first model router
+- Interaction audit log
+- Screenshot understanding / OCR
+- Markdown/JSON export
+
+Later:
+
+- Knowledge graph
+- Plugin/action system
+- Cross-device sync
+- Collaboration/sharing
 
 ---
 
