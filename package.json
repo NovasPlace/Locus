@@ -1,7 +1,7 @@
 {
   "name": "locus",
-  "version": "4.2.3",
-  "description": "OS-level AI code reviewer — select any text, get staff-engineer analysis",
+  "version": "4.2.4",
+  "description": "Local-first workspace context layer for capturing, organizing, and routing AI context.",
   "homepage": "https://github.com/NovasPlace/Locus",
   "main": "src/main.js",
   "author": {
