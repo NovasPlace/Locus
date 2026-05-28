@@ -5,6 +5,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [4.2.4] — 2026-05-28
+
+### Added
+- **Windows release workflow** — GitHub Actions can now build Windows release artifacts on version tags and manual runs.
+- **Portable Windows target** — Windows builds now include both NSIS installer and portable executable targets.
+- **Context-layer README** — public docs now describe Locus as a local-first workspace context layer with Working Context, context cards, screenshot/document notes, radial actions, and model routing.
+
+### Changed
+- **Public positioning** — README now focuses on context capture, organization, saved thread memory, provenance, and local/cloud model routing.
+- **Release instructions** — README now explains how users get the `.exe` from GitHub Releases instead of source files.
+
+---
+
 ## [4.2.3] — 2026-03-17
 
 ### Changed
